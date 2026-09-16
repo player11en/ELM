@@ -1,0 +1,24 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/
+
+# Local agent/session state — not part of the project
+.claude/
+
+# Backups produced while editing
+*.bak
+index.html.bak
+
+# A vault living inside the repo folder is the user's own notes, not code.
+# Adjust if you deliberately want to ship an example vault.
+ELM_Data/
+ELM_data/
+vault/
+
+# Scratch output from publishing/exporting locally
+elm-site.zip
+elm-site-extracted/
