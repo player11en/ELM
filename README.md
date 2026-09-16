@@ -118,8 +118,10 @@ Each remains under its own license and copyright:
 | mammoth | DOCX reading | BSD-2-Clause |
 | SheetJS (xlsx) | Spreadsheet reading | Apache-2.0 |
 
-Refer to each upstream project for authoritative license text; several
-minified builds do not carry a full header.
+Full license text for every one of these is in
+[`vendor/LICENSES/`](vendor/LICENSES/). Several minified builds lost their
+header during minification, so that directory is the authoritative notice —
+keep it with any copy or fork.
 
 ## Status
 
