@@ -53,31 +53,41 @@ ELM is an attempt at that missing organisational layer, built local-first.
 
 ## Platforms
 
-| Platform | How |
+| Platform | Status |
 |---|---|
-| Web / PWA | Open `index.html` — installable, works offline |
-| Windows | Tauri desktop build (`.exe` or `.msi`) |
-| Android | Tauri Android build (APK) |
+| Web / PWA | **Build it yourself from this repo** — installable, works offline |
+| Windows | Builds and runs (Tauri) |
+| Linux | Builds and runs (`.deb`, `.rpm`, `.AppImage` — Tauri) |
+| Android | Builds and runs (Tauri) |
+| macOS | Not built yet — needs a Mac + Xcode |
+| iOS | Not started — a real port, not a rebuild; see Roadmap |
 
-All three ship from the same `index.html` — this repository contains that
-shared frontend. The Tauri wrapper project is kept separately.
+All of these ship from the same `index.html` as the frontend. **Only the web
+version is buildable from what's in this repository.** Windows, Linux and
+Android all work, but through a separate Tauri wrapper project (Rust +,
+for Android, a Kotlin/Gradle project) that isn't published here yet — see
+Roadmap. Until it is, those three are available as prebuilt binaries via
+[Releases](https://github.com/player11en/ELM/releases) rather than something you can compile yourself.
 
 ## Running it
 
-**Web** — serve the folder over HTTP and open `index.html`:
+**Web** — the only platform you can build from this repo directly. Serve the
+folder over HTTP and open `index.html`:
 
 ```bash
 # any static server works
 npx http-server .
 ```
 
-Opening via `file://` mostly works, but a served origin is recommended
-(service worker and some browser APIs need it).
+Opening via `file://` mostly works, but a served origin is recommended — the
+service worker (offline support, installability) needs a secure context:
+HTTPS, or `http://localhost` while developing. Any other plain `http://`
+origin, or `file://`, will run the app fine but silently skip service-worker
+registration.
 
-**Desktop / Android** — built with [Tauri](https://tauri.app), which wraps
-this same `index.html` as the frontend. That project lives outside this
-repository for now; it needs Rust, and Android additionally needs JDK 17 plus
-the Android SDK and NDK.
+**Windows / Linux / Android** — get a prebuilt binary from
+[Releases](https://github.com/player11en/ELM/releases) for now. The Tauri wrapper that builds these isn't
+part of this repository yet (see Roadmap for why and what's blocking it).
 
 ## Architecture
 
@@ -85,7 +95,8 @@ The entire app is one `index.html` — HTML, CSS and JavaScript together, with
 third-party libraries vendored in `vendor/`.
 
 **There is no build step.** Editing `index.html` and reloading is the whole
-development loop, and the same file is what runs on desktop and Android.
+development loop, and the same file is what runs on every platform —
+desktop, Android, and this web build.
 
 This is deliberate, and it is also the main open question for contribution at
 scale — splitting into plain `<script src>` files works without a bundler
@@ -98,6 +109,12 @@ the Roadmap.
 Open, roughly in the order they'll get picked up. Not promises, and PRs
 against any of these are welcome.
 
+- [ ] Publish the Tauri wrapper (Windows/Linux/Android build project) so
+      those platforms are self-buildable, not just downloadable. Blocked on
+      separating out the Android release-signing keystore first — it
+      currently lives inside that project and must never become public
+- [ ] Attach prebuilt Windows/Linux/Android binaries to a GitHub Release
+      (built and working; not yet published — web is shipping first)
 - [ ] Note version history — surface Syncthing's `.stversions/` first (diff +
       restore), before inventing a separate storage mechanism
 - [ ] Images and PDFs as first-class objects, not just attachments hanging
