@@ -88,16 +88,37 @@ third-party libraries vendored in `vendor/`.
 development loop, and the same file is what runs on desktop and Android.
 
 This is deliberate, and it is also the main open question for contribution at
-scale — see `elm-strategy.md` for the analysis and the (verified) options for
-splitting the source without introducing a bundler.
+scale — splitting into plain `<script src>` files works without a bundler
+(external CSS and multiple classic scripts were both verified to work; the
+codebase already relies on global functions), it's just not needed yet. See
+the Roadmap.
 
-## Project documents
+## Roadmap
 
-| File | Contents |
-|---|---|
-| `elm-status-and-fixes.md` | What is built, what is open, and why |
-| `elm-strategy.md` | Direction, positioning, architecture decisions |
-| `note-app-master-plan.md` | Original design document |
+Open, roughly in the order they'll get picked up. Not promises, and PRs
+against any of these are welcome.
+
+- [ ] Note version history — surface Syncthing's `.stversions/` first (diff +
+      restore), before inventing a separate storage mechanism
+- [ ] Images and PDFs as first-class objects, not just attachments hanging
+      off a note
+- [ ] Timeline / temporal view
+- [ ] macOS build (Tauri already supports it; needs a Mac + Xcode to build
+      and sign)
+- [ ] iOS build — real port, not a checkbox: the storage layer assumes real
+      paths on disk, which iOS's sandbox doesn't give you. Similar scope to
+      the Android SAF work already done
+- [ ] `CONTRIBUTING.md` — how to build, where the code lives, PR expectations
+- [ ] Split `index.html` into multiple `<script src>` files once concurrent
+      contribution is actually a friction (verified feasible without a
+      bundler — see git history for the analysis if it comes back)
+- [ ] Plugin/extension API — only once real, repeated demand shows up;
+      building it speculatively is the mistake this item exists to avoid
+
+Shipped and not listed here: wikilinks, backlinks, graph view, daily notes,
+full-text + files-mode search, interactive task checkboxes, static-site
+publishing, JSON export/import, `==highlight==` syntax, callouts,
+transclusion, entity templates, query blocks.
 
 ## Third-party libraries
 
