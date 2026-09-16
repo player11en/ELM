@@ -2009,7 +2009,7 @@ kbd {
     <div class="note-editor" id="noteEditor" style="display:none">
       <div class="editor-header">
         <button class="back-btn" id="backToList" title="Back to list">←</button>
-        <input type="text" class="note-title-input" id="noteTitleInput" placeholder="Untitled Note">
+        <input type="text" class="note-title-input" id="noteTitleInput" placeholder="Untitled Note" tabindex="1">
         <div class="note-meta" id="noteMeta"></div>
         <button class="header-icon-btn" id="outlineToggleBtn" title="Toggle outline">☰</button>
         <button class="header-icon-btn" id="footerCollapseBtn" title="Collapse tags/folder/properties panel">▾</button>
@@ -2030,7 +2030,7 @@ kbd {
         <div class="outline-list" id="outlineList"></div>
       </div>
       <div class="editor-body" data-view="edit" id="editorBody">
-        <textarea class="editor-textarea" id="editorTextarea"
+        <textarea class="editor-textarea" id="editorTextarea" tabindex="2"
                   placeholder="Start writing in Markdown…" spellcheck="true"></textarea>
         <div class="editor-preview markdown-body" id="editorPreview"></div>
       </div>
@@ -6002,7 +6002,19 @@ async function openNote(id) {
   showPanel('noteEditor');
   setSaveStatus('');
   updateWordCount(note.body);
-  if (window.innerWidth <= 720) document.getElementById('layout').classList.add('mobile-note-open');
+  if (window.innerWidth <= 720) {
+    document.getElementById('layout').classList.add('mobile-note-open');
+  } else {
+    // Keyboard-first workflow: land in the title on open, caret at the end
+    // (not select-all — this is an existing note, not a blank one, so
+    // typing should extend the title, not wipe it by accident). Tab order
+    // from here goes straight into the body (tabindex on both fields), not
+    // through the outline/view-toggle/toolbar buttons in between them.
+    // Skipped on mobile so opening a note doesn't pop the on-screen keyboard.
+    const titleInput = document.getElementById('noteTitleInput');
+    titleInput.focus();
+    titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
+  }
 
   if (editorView !== 'edit') await renderPreview();
   await renderAttachmentFooter();
