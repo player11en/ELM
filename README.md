@@ -101,8 +101,39 @@ desktop, Android, and this web build.
 This is deliberate, and it is also the main open question for contribution at
 scale — splitting into plain `<script src>` files works without a bundler
 (external CSS and multiple classic scripts were both verified to work; the
-codebase already relies on global functions), it's just not needed yet. See
-the Roadmap.
+codebase already relies on global functions), it's just not needed at that
+scale yet. See the Roadmap.
+
+One small, targeted exception exists already: `js/lib/pathUtils.js` holds a
+handful of pure logic functions (path/title/regex utilities), pulled out
+specifically so they're unit-testable via plain `require()` — same
+global-scope `<script src>` loading as everything else, zero behavior
+change, just enough of a split to let `node:test` reach them directly. See
+Testing below.
+
+## Testing
+
+Two layers, both under `npm test`:
+
+- **Unit tests** (`tests/unit/`) — Node's built-in `node:test`, zero extra
+  dependencies. Covers the pure logic in `js/lib/pathUtils.js`.
+- **End-to-end tests** (`tests/e2e/`) — `@playwright/test`, driving a real
+  headless browser against the actual app. Covers core note flows, the
+  storage adapter, attachments, the file viewer, the PWA/offline path,
+  export/import, static-site publishing, and an XSS regression audit.
+
+```bash
+npm install
+npm test              # both layers
+npm run test:unit      # just the fast one
+npm run test:e2e       # just Playwright
+```
+
+CI (`.github/workflows/test.yml`) runs both on every push and PR.
+
+A third, separate suite lives in `tests/manual-device/` — real Tauri
+desktop/Android builds driven over CDP, run by hand, not in CI. See its own
+README for why and how.
 
 ## Roadmap
 
@@ -157,8 +188,6 @@ against any of these are welcome.
         rest of the vault.
 - [ ] Multi-vault quick-switch — every comparable app (Obsidian, Logseq,
       Joplin) has one; ELM currently doesn't
-- [ ] CI + a committed automated test suite — real regression coverage
-      exists only as ad-hoc local scripts today, nothing runs on a PR
 - [ ] Split `index.html` into multiple `<script src>` files once concurrent
       contribution is actually a friction (verified feasible without a
       bundler — see git history for the analysis if it comes back)
@@ -185,7 +214,8 @@ against any of these are welcome.
 Shipped and not listed here: wikilinks, backlinks, graph view, daily notes,
 full-text + files-mode search, interactive task checkboxes, static-site
 publishing, JSON export/import, `==highlight==` syntax, callouts,
-transclusion, entity templates, query blocks.
+transclusion, entity templates, query blocks, a unit + e2e test suite
+running in CI on every push and PR (see Testing below).
 
 ## Third-party libraries
 

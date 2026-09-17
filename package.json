@@ -1,0 +1,13 @@
+{
+  "name": "elm-tests",
+  "private": true,
+  "description": "Dev/test tooling only — the app itself (index.html) has no build step and never depends on this package.json or node_modules.",
+  "scripts": {
+    "test:unit": "node --test \"tests/unit/**/*.test.js\"",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

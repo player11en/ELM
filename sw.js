@@ -1,16 +1,21 @@
-const CACHE = 'elm-v6';
+const CACHE = 'elm-v7';
 
 // The 11 libraries + pdf.js's worker are vendored locally under vendor/ now
 // (see index.html's script tags), not loaded from CDN. Cache key bumped
-// again for fflate's addition (site-export zip, browser path) — same
-// reason as every prior bump: a returning tab must not keep an old
-// precache list that doesn't know about a newly-vendored file.
+// again for js/lib/pathUtils.js's addition (pure logic extracted for unit
+// testing, still loaded via <script src> at runtime) — same reason as
+// every prior bump: a returning tab must not keep an old precache list
+// that doesn't know about a newly-added file. Found by an offline-reload
+// e2e test actually failing with "titleKey is not defined" — this file
+// wasn't reachable offline until this bump, exactly the bug this whole
+// cache scheme exists to prevent.
 const PRECACHE = [
   './',
   './index.html',
   './manifest.json',
   './icon.png',
   './icon-maskable.png',
+  './js/lib/pathUtils.js',
   './vendor/idb.umd.js',
   './vendor/marked.min.js',
   './vendor/highlight.min.js',
@@ -58,11 +63,21 @@ self.addEventListener('activate', event => {
 // bucket below — it's a local asset the user edits directly (already
 // happened twice), not an immutable pinned URL; cache-first would repeat
 // the exact staleness bug this comment describes, just for the icon
-// instead of the HTML.
-const APP_SHELL = new Set(['./', './index.html', './manifest.json', './sw.js', './icon.png']);
+// instead of the HTML. js/lib/pathUtils.js is the same category as
+// index.html itself — project code that gets edited, not a pinned vendor
+// file — so it belongs here too, not in the cache-first vendor bucket.
+const APP_SHELL = new Set(['./', './index.html', './manifest.json', './sw.js', './icon.png', './js/lib/pathUtils.js']);
 
 function isAppShellRequest(url) {
-  const path = url.pathname.replace(/^.*\//, './') ;
+  // Preserve the full relative path, not just the basename — a basename-only
+  // comparison (previously `pathname.replace(/^.*\//, './')`, which discards
+  // everything through the last slash) only ever "worked" because every
+  // app-shell file so far happened to sit at the vault root with no
+  // subdirectory. It silently breaks the moment one doesn't (found by
+  // js/lib/pathUtils.js needing this same network-first treatment), and it
+  // would just as silently collide two different-directory files that
+  // happen to share a filename.
+  const path = url.pathname === '/' ? './' : '.' + url.pathname;
   return APP_SHELL.has(path) || url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
 }
 

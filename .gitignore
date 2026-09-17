@@ -22,3 +22,11 @@ vault/
 # Scratch output from publishing/exporting locally
 elm-site.zip
 elm-site-extracted/
+
+# Test tooling (dev-only, never shipped — see package.json)
+node_modules/
+test-results/
+playwright-report/
+# Regenerated at test-time by tests/e2e/*.spec.js's own beforeAll hooks —
+# not static assets, no need to commit them.
+tests/e2e/fixtures/

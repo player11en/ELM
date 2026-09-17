@@ -2136,6 +2136,10 @@ kbd {
 <script src="vendor/minisearch.min.js"></script>
 <script src="vendor/vis-network.min.js"></script>
 <script src="vendor/fflate.min.js"></script>
+<!-- Pure logic extracted for unit-testing (tests/unit/pathUtils.test.js) —
+     same global-scope semantics as every function below, just in its own
+     file so Node can require() it directly. See js/lib/pathUtils.js. -->
+<script src="js/lib/pathUtils.js"></script>
 
 <script>
 // Running inside the Tauri desktop shell rather than a browser. Declared
@@ -2395,7 +2399,8 @@ function escHtml(s) {
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+// escapeRegex moved to js/lib/pathUtils.js (unit-tested there, loaded via
+// <script src> before this block).
 
 function formatDate(ts) {
   return new Intl.DateTimeFormat('en-GB', { day:'numeric', month:'short', year:'numeric' }).format(new Date(ts));
@@ -2493,12 +2498,12 @@ async function dbGetByIndex(s, idx, val) { return db.getAllFromIndex(s, idx, val
 // section. Nothing outside it should touch the File System Access API
 // directly — this boundary is what makes future Capacitor/Electron storage
 // ports mechanical (see note-app-master-plan.md, Phase 1b).
-const RESERVED_DIR_NAMES = new Set(['attachments', '.trash']);
+//
+// RESERVED_DIR_NAMES and WINDOWS_RESERVED_NAMES moved to js/lib/pathUtils.js
+// (unit-tested there, loaded via <script src> before this block) — do not
+// redeclare them here, a duplicate top-level `const` across <script> tags
+// throws SyntaxError.
 const TEXT_FILE_RE = /\.(md|markdown|txt|json|ya?ml|csv|log)$/i;
-const WINDOWS_RESERVED_NAMES = new Set([
-  'con','prn','aux','nul','com1','com2','com3','com4','com5','com6','com7','com8','com9',
-  'lpt1','lpt2','lpt3','lpt4','lpt5','lpt6','lpt7','lpt8','lpt9'
-]);
 
 const MAX_VAULT_DEPTH = 5;          // how deep folder nesting is scanned/listed
 
@@ -2522,41 +2527,8 @@ function isReservedDirName(name) {
   return RESERVED_DIR_NAMES.has(String(name).toLowerCase()) || String(name).startsWith('.');
 }
 
-function sanitizePathSegment(name) {
-  // Central path-safety chokepoint (plan §HARD-3). Folder names are user input
-  // with no prior stripping (createFolder only trims) — this is the only place
-  // trusted to make a single path segment disk-safe. Strips separators/
-  // traversal, Windows-illegal characters, reserved device names, reserved
-  // vault directory names, and leading/trailing dots/spaces (invalid or
-  // hidden on Windows).
-  let s = String(name || '').trim();
-  s = s.replace(/[\/\\]/g, '-');
-  s = s.replace(/\.\.+/g, '.');
-  s = s.replace(/[<>:"|?*\x00-\x1f]/g, '');
-  // Truncate *before* trimming dots/spaces — slicing a long name can otherwise
-  // land on a '.' or ' ' and re-create the exact trailing character just
-  // stripped, which Windows rejects.
-  s = s.slice(0, 100);
-  s = s.replace(/^[.\s]+/, '').replace(/[.\s]+$/, '');
-  if (!s) return 'item-' + Date.now().toString(36);
-  // A folder that sanitizes to a reserved name would be created on disk but
-  // then filtered out of every listing — invisible, with its notes stranded.
-  if (WINDOWS_RESERVED_NAMES.has(s.toLowerCase()) || RESERVED_DIR_NAMES.has(s.toLowerCase())) s += '_';
-  return s;
-}
-
-function slugifyTitle(title) {
-  let s = String(title || '').toLowerCase().trim();
-  s = s.replace(/[^\w\s-]/g, '');
-  s = s.replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  s = sanitizePathSegment(s);
-  return s || 'untitled';
-}
-
-function splitPath(path) {
-  const parts = path.split('/').filter(Boolean);
-  return { dirParts: parts.slice(0, -1), name: parts[parts.length - 1] };
-}
+// sanitizePathSegment, slugifyTitle, splitPath moved to js/lib/pathUtils.js
+// (unit-tested there, loaded via <script src> before this block).
 
 // Browser backend: File System Access API. Body unchanged from when this was
 // the only backend — the desktop (Tauri) build swaps in a different object
@@ -3118,12 +3090,10 @@ function stableIdFromPath(path) {
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
 }
 
-// Syncthing's real conflict-file naming convention:
-// <name>.sync-conflict-YYYYMMDD-HHMMSS-<deviceID short>.<ext> — matched
-// specifically to this shape, not just any filename containing the word
-// "conflict", so a note someone deliberately titled that way is never
-// miscategorized (see plan §HARD-1, sync-robustness plan).
-const SYNC_CONFLICT_RE = /\.sync-conflict-\d{8}-\d{6}-[a-z0-9]+\.md$/i;
+// SYNC_CONFLICT_RE moved to js/lib/pathUtils.js (unit-tested there, loaded
+// via <script src> before this block) — Syncthing's real conflict-file
+// naming convention: <name>.sync-conflict-YYYYMMDD-HHMMSS-<deviceID
+// short>.<ext>.
 
 // Reads one file and folds it into vaultIndex. `f` carries the path/folderId
 // plus the mtime/size already gathered by collectVaultFiles, so this doesn't
@@ -3218,9 +3188,9 @@ function wikilinkMatchToObject(m) {
   };
 }
 
-// title/link-index normalization — deliberately NOT slugifyTitle, which
+// titleKey moved to js/lib/pathUtils.js (unit-tested there, loaded via
+// <script src> before this block) — deliberately NOT slugifyTitle, which
 // strips non-word characters and would collide "Foo & Bar" with "Foo Bar".
-function titleKey(title) { return (title || '').trim().toLowerCase(); }
 
 // Deterministic heading-id slug — used both to inject an id on every
 // rendered heading (marked's renderer.heading override) and to compute the
@@ -4751,16 +4721,8 @@ function rewriteAttachmentDepth(body, fromFolderId, toFolderId) {
   });
 }
 
-function resolveRelativeVaultPath(noteDirPrefix, target) {
-  const combined = (noteDirPrefix + target).split('/');
-  const out = [];
-  for (const seg of combined) {
-    if (seg === '.' || seg === '') continue;
-    if (seg === '..') out.pop();
-    else out.push(seg);
-  }
-  return out.join('/');
-}
+// resolveRelativeVaultPath moved to js/lib/pathUtils.js (unit-tested there,
+// loaded via <script src> before this block).
 
 async function resolveVaultAssetURLs(markdown, folderId) {
   cleanupPreviewURLs();

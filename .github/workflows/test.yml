@@ -1,0 +1,22 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+
+# Scope deliberately limited to the web-testable surface — no Tauri build,
+# no Android emulator. The manual-device suite (tests/manual-device/) tests
+# real Tauri/Android builds over CDP and isn't run here; see its own
+# README for why and how to run it by hand. This matches the repo's
+# existing boundary: only the web build is buildable/testable from what's
+# published here (the Tauri wrapper project isn't part of this repo yet).
