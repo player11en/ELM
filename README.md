@@ -115,8 +115,11 @@ against any of these are welcome.
       currently lives inside that project and must never become public
 - [ ] Attach prebuilt Windows/Linux/Android binaries to a GitHub Release
       (built and working; not yet published — web is shipping first)
-- [ ] Note version history — surface Syncthing's `.stversions/` first (diff +
-      restore), before inventing a separate storage mechanism
+- [ ] **Note version history (recommended next)** — surface Syncthing's
+      `.stversions/` first (diff + restore), before inventing a separate
+      storage mechanism. Picked over the plugin API deliberately: this
+      benefits every existing user immediately, with no community/ecosystem
+      prerequisite the way a plugin API would need
 - [ ] Images and PDFs as first-class objects, not just attachments hanging
       off a note
 - [ ] Timeline / temporal view
@@ -126,11 +129,32 @@ against any of these are welcome.
       paths on disk, which iOS's sandbox doesn't give you. Similar scope to
       the Android SAF work already done
 - [ ] `CONTRIBUTING.md` — how to build, where the code lives, PR expectations
+- [ ] Multi-vault quick-switch — every comparable app (Obsidian, Logseq,
+      Joplin) has one; ELM currently doesn't
+- [ ] CI + a committed automated test suite — real regression coverage
+      exists only as ad-hoc local scripts today, nothing runs on a PR
 - [ ] Split `index.html` into multiple `<script src>` files once concurrent
       contribution is actually a friction (verified feasible without a
       bundler — see git history for the analysis if it comes back)
 - [ ] Plugin/extension API — only once real, repeated demand shows up;
-      building it speculatively is the mistake this item exists to avoid
+      building it speculatively is the mistake this item exists to avoid.
+      Design notes for whenever that demand shows up:
+      - The single-global-scope architecture genuinely helps here — a
+        plugin `<script>` can call ELM's existing internal functions
+        directly, no bundler, no `postMessage` bridge across an iframe.
+        That part really is easier than in a modularized app.
+      - That is not the hard part, though. Three real problems still need
+        solving first: (1) today's internal functions (`openNote`,
+        `saveNote`, `vaultAdapter`, …) were never designed as a stable
+        contract — a real plugin API means wrapping them behind a
+        documented, versioned surface, so an internal refactor doesn't
+        break every plugin; (2) shared global scope means zero sandboxing
+        — a plugin gets unrestricted vault + network access by default,
+        a real trust problem for an app pitched on privacy (Obsidian has
+        this same weakness, worth learning from rather than repeating
+        uncritically); (3) no loading mechanism exists yet — a plugins
+        folder convention, manifest format, enable/disable UI, all
+        unbuilt.
 
 Shipped and not listed here: wikilinks, backlinks, graph view, daily notes,
 full-text + files-mode search, interactive task checkboxes, static-site
