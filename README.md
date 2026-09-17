@@ -129,6 +129,32 @@ against any of these are welcome.
       paths on disk, which iOS's sandbox doesn't give you. Similar scope to
       the Android SAF work already done
 - [ ] `CONTRIBUTING.md` — how to build, where the code lives, PR expectations
+- [ ] Per-note/folder encryption — deferred, not because it's a bad idea but
+      because it's real, costly work competing against higher-value items.
+      Design notes for whenever it's picked up:
+      - **Only real cryptography counts.** `crypto.subtle` (Web Crypto API,
+        native in every browser and in the Tauri webview, zero new
+        dependencies) with AES-GCM and a password-derived key via PBKDF2.
+        A classical cipher (XOR, Vigenère, anything hand-rolled) is not a
+        weaker version of this — it's broken outright, in seconds, with
+        widely available tools, and markdown's predictable structure
+        (repeated words, YAML keys, common English) makes it easier to
+        break, not harder. Shipping one would be worse than shipping
+        nothing: it tells a user their notes are protected when they
+        aren't.
+      - Local-first narrows the threat model, it doesn't remove the reason
+        to want this: a plaintext vault synced by Syncthing can still end
+        up mirrored into a cloud backup folder (OneDrive/Dropbox/etc.) by
+        the user's own separate habits, or exposed by device theft or a
+        shared machine.
+      - Real cost, unavoidable either way: an encrypted note stops being a
+        plain, portable, Obsidian-openable markdown file (the project's
+        core pitch), and MiniSearch's full-text index only works on
+        plaintext — an encrypted note either drops out of search entirely
+        or the key has to be re-derived and decrypted into memory each
+        session just to keep searching working. Opt-in, per-note or
+        per-folder, is the only shape that keeps this from compromising the
+        rest of the vault.
 - [ ] Multi-vault quick-switch — every comparable app (Obsidian, Logseq,
       Joplin) has one; ELM currently doesn't
 - [ ] CI + a committed automated test suite — real regression coverage
