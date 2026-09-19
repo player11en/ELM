@@ -1226,6 +1226,68 @@ header h1 {
 }
 .big-icon { font-size: 40px; opacity: 0.35; }
 .empty-state-panel p { font-size: 13px; line-height: 1.7; }
+.empty-state-hint { color: var(--text-muted); margin: 0; }
+
+/* Mobile-only FAB (see the max-width:720px block for when it's shown) —
+   hidden by default here so desktop never sees it, the sidebar's own
+   "+ New Note" button already covers that case there. */
+.mobile-new-note-fab {
+  display: none;
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 20;
+  cursor: pointer;
+}
+.mobile-new-note-fab:active { transform: scale(0.95); }
+
+/* A real, prominent button rather than an underlined text link — this is
+   the only way to create a note from here on mobile, where the sidebar
+   with its own "+ New Note" button is off-screen until a note is open. */
+.empty-state-create-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 28px;
+  cursor: pointer;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--t-fast), box-shadow var(--t-fast), border-color var(--t-fast);
+}
+.empty-state-create-btn:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.empty-state-create-btn:active { transform: translateY(0); }
+.empty-state-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-md);
+}
+@media (max-width: 720px) {
+  /* Bigger, more obviously tappable on the platform where this is the
+     ONLY way to create a note — no sidebar button reachable here. */
+  .empty-state-create-btn { padding: 28px 36px; }
+  .empty-state-icon { width: 72px; height: 72px; }
+}
 
 .link-btn {
   background: none;
@@ -1654,6 +1716,11 @@ header h1 {
     background: var(--bg);
   }
   .layout.mobile-note-open .main { display: flex; }
+
+  /* Only where the note list is actually the visible mobile screen — hide
+     it once a note is open, the editor already fills the screen there. */
+  .mobile-new-note-fab { display: flex; }
+  .layout.mobile-note-open .mobile-new-note-fab { display: none; }
 }
 
 /* Scrollbars */
@@ -2002,6 +2069,11 @@ kbd {
     <div class="notes-list" id="notesList"></div>
   </div>
 
+  <!-- Mobile-only: creating a note otherwise needs the sidebar drawer
+       (behind the hamburger toggle), an extra hidden step. This mirrors
+       #newNoteBtn/doNewNote directly, no detour through the sidebar. -->
+  <button class="mobile-new-note-fab" id="mobileNewNoteFab" title="New note">+</button>
+
   <!-- Main Panel -->
   <main class="main" id="mainPanel">
 
@@ -2093,10 +2165,11 @@ kbd {
 
     <!-- Empty State -->
     <div class="empty-state-panel" id="emptyStatePanel" style="display:flex">
-      <div class="big-icon">📝</div>
-      <p>Select a note or<br>
-        <button class="link-btn" id="createFirstNote">create your first note</button>
-      </p>
+      <p class="empty-state-hint">Select a note, or</p>
+      <button class="empty-state-create-btn" id="createFirstNote" title="Create a new note">
+        <img src="icon.png" alt="" class="empty-state-icon">
+        <span>+ New Note</span>
+      </button>
     </div>
 
   </main>
@@ -8562,6 +8635,7 @@ function initEvents() {
 
   document.getElementById('newNoteBtn').addEventListener('click', doNewNote);
   document.getElementById('createFirstNote')?.addEventListener('click', doNewNote);
+  document.getElementById('mobileNewNoteFab')?.addEventListener('click', doNewNote);
 
   // Note list click
   document.getElementById('notesList').addEventListener('click', async e => {
