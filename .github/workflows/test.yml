@@ -5,6 +5,12 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # package.json lives under tests/, not the repo root — see its own
+        # comment for why (Tauri's frontendDist embeds the whole repo root
+        # and refuses to build if node_modules sits directly in it).
+        working-directory: tests
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

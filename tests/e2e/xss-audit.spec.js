@@ -6,8 +6,13 @@
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const OUT_DIR = path.join(__dirname, '..', '..', 'test-results', 'xss-audit');
+// Outside the repo, not tests/test-results/ — Tauri's asset embedder walks
+// the whole repo root at build time with no ignore mechanism, so files
+// that appear/disappear here between test runs can break an unrelated
+// native build (confirmed by hitting exactly that failure once).
+const OUT_DIR = path.join(os.tmpdir(), 'elm-test-artifacts', 'xss-audit');
 
 test('hostile markdown does not execute in live preview or exported HTML', async ({ page, browser }) => {
   fs.rmSync(OUT_DIR, { recursive: true, force: true });

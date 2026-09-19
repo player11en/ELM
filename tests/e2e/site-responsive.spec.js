@@ -1,13 +1,17 @@
 // Published static-site pages must not overflow horizontally on a phone —
 // content deliberately chosen to stress it: a wide table, a long unbroken
 // code line, a very long URL. Migrated from pw-test/site-responsive-test.js
-// — same assertions/flow, output path moved under the gitignored
-// test-results/ dir instead of a session-scratchpad absolute path.
+// — same assertions/flow.
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const OUT = path.join(__dirname, '..', '..', 'test-results', 'site-responsive');
+// Outside the repo, not tests/test-results/ — Tauri's asset embedder walks
+// the whole repo root at build time with no ignore mechanism, so files
+// that appear/disappear here between test runs can break an unrelated
+// native build (confirmed by hitting exactly that failure once).
+const OUT = path.join(os.tmpdir(), 'elm-test-artifacts', 'site-responsive');
 
 test('published pages have no horizontal overflow at phone/tablet/desktop widths', async ({ page, browser }) => {
   fs.rmSync(OUT, { recursive: true, force: true });

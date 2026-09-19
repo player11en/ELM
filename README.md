@@ -123,11 +123,19 @@ Two layers, both under `npm test`:
   export/import, static-site publishing, and an XSS regression audit.
 
 ```bash
+cd tests
 npm install
 npm test              # both layers
 npm run test:unit      # just the fast one
 npm run test:e2e       # just Playwright
 ```
+
+`package.json`/`node_modules` live under `tests/`, not the repo root — Tauri's
+`frontendDist` (the Tauri wrapper's setting, not anything in this repo)
+points at this whole repo as the app's web assets, and hard-refuses to
+build if `node_modules` sits directly in that folder. One level deeper is
+invisible to that check, and Node's own module resolution still finds
+`tests/node_modules` from anything under `tests/**`.
 
 CI (`.github/workflows/test.yml`) runs both on every push and PR.
 

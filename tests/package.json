@@ -1,0 +1,14 @@
+{
+  "name": "elm-tests",
+  "private": true,
+  "description": "Dev/test tooling only — the app itself (../index.html) has no build step and never depends on this package.json or node_modules. Lives here, one level under the repo root, rather than at the root itself, because Tauri's frontendDist points at the whole repo and hard-refuses to build if node_modules is a DIRECT child of that folder — one level deeper is invisible to that check, and Node's own module resolution still finds tests/node_modules from anything under tests/**.",
+  "scripts": {
+    "test:unit": "node --test \"unit/**/*.test.js\"",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "playwright": "^1.63.0"
+  }
+}
