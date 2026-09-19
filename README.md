@@ -175,6 +175,47 @@ against any of these are welcome.
       I/O that already exist; the new work is the board layout and the
       drop handler. Start with sort-by-date within a column rather than a
       persisted per-column order — free, no new ordinal field needed
+- [ ] Alias/shorthand presets (`;/name` → expands) — not just a URL
+      shortener; the stronger case is naming: set `;/main` once for a
+      character/place, reuse it everywhere instead of retyping (and
+      mistyping) a full name. Real design fork depending on what's
+      aliased, not one mechanism for both:
+      - **Naming** (character/place/faction — ties into entity templates
+        already built) — expand-on-type, not render-time: typing `;/main`
+        + Tab/Enter replaces it there and then with the real
+        `[[Full Character Name]]` text, same UI mechanism the existing
+        `[[` wikilink autocomplete already uses. Resolving to a real
+        wikilink rather than plain text is the actual point — it means
+        backlinks, graph view and unlinked-mention detection all pick it
+        up for free, for the price of an alias lookup instead of a typo.
+        Keeps the file clean and portable afterward (no raw `;/...` syntax
+        left sitting in an exported or Obsidian-opened copy).
+      - **URLs / vault-internal paths** — render-time expansion instead
+        (raw `;/name/rest` stays in the file, resolved only at display
+        time), which is arguably better here: change the alias once,
+        every note using it updates automatically. `;/acme` = an alias for
+        a deeply-nested folder path, so `;/acme/Kickoff` resolves as a
+        wikilink into `Work/Clients/Acme Corp/2026/Meetings/Kickoff`
+        without retyping that path — the one genuinely ELM-specific
+        version of this idea; a plain URL shortener is a commodity problem
+        already solved elsewhere.
+      - Both share one fail-closed rule: `;/name` only ever does anything
+        if `name` is a registered preset, otherwise it's inert plain text
+        — same principle as an unresolved wikilink, so an accidental
+        `;/word` in ordinary prose is harmless. `;` isn't claimed by any
+        existing syntax in this app, confirmed.
+      - **Storage: folder-scoped, nearest-ancestor wins, not one global
+        file.** A flat global registry breaks the moment there are two
+        projects in one vault — `;/main` needs to mean a different person
+        in "Book A" than in "Book B." An alias file at a folder's root
+        applies to everything under it (subfolders included), same
+        cascading idea as `.gitignore`/`.editorconfig`; a vault-root file
+        can still hold truly global ones (own signature, a URL used
+        everywhere), with the more specific folder winning on conflict.
+      - Deferred like the plugin API and encryption: real, non-trivial
+        scope (a presets UI, autocomplete, the render extension, cascading
+        lookup) for a currently-hypothetical pain point — worth building
+        once there's an actual recurring case driving it, not speculatively
 - [ ] Images and PDFs as first-class objects, not just attachments hanging
       off a note
 - [ ] Timeline / temporal view
