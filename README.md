@@ -159,6 +159,22 @@ against any of these are welcome.
       storage mechanism. Picked over the plugin API deliberately: this
       benefits every existing user immediately, with no community/ecosystem
       prerequisite the way a plugin API would need
+- [ ] Note properties badge — a compact rendered strip at the top of a note
+      showing key frontmatter fields (status, tags, relationships) at a
+      glance. Cheap: frontmatter is already parsed and rendered, this is
+      mostly a display format. The one idea worth taking from comparing
+      against Confluence conceptually — most of what it does well (spaces,
+      labels, macros, page history) ELM already has a leaner version of,
+      or the idea doesn't fit local-first (watchers/notifications need a
+      server; real-time inline comments need either that or an offline-
+      merge model neither of which fits a solo/small-team-via-file-sync
+      tool)
+- [ ] Kanban board — as a *view*, not a new subsystem: group notes into
+      columns by one frontmatter field (e.g. `status:`), drag a card to
+      change that field and save. Reuses query-block infra and frontmatter
+      I/O that already exist; the new work is the board layout and the
+      drop handler. Start with sort-by-date within a column rather than a
+      persisted per-column order — free, no new ordinal field needed
 - [ ] Images and PDFs as first-class objects, not just attachments hanging
       off a note
 - [ ] Timeline / temporal view
