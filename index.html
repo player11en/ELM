@@ -152,7 +152,9 @@ header {
   flex-shrink: 0;
 }
 
-.logo { font-size: 18px; flex-shrink: 0; }
+/* The real app icon, not an emoji stand-in — same artwork as the PWA/desktop/
+   Android icons, so every surface shows one identity. */
+.logo { width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0; display: block; }
 .header-icon-btn {
   background: none;
   border: none;
@@ -1653,6 +1655,20 @@ header h1 {
 #headerOverflowBtn { display: inline-flex; }
 #backupBtn, #restoreBtn, #styleGuideBtn, #dailyNoteBtn, #graphViewBtn, #publishSiteBtn { display: none; }
 
+/* Header quick-create. Hidden by default: the sidebar's own "+ New Note"
+   already covers a normal desktop layout, and on mobile the FAB does. It
+   only appears where neither is reachable — desktop with the sidebar
+   collapsed or focus mode on, both of which hide the sidebar (and with it
+   the only other create button). Scoped to min-width:721px because below
+   that the layout is the mobile one (FAB + hamburger), where focus mode is
+   a deliberate no-op. ID selector + :has() outranks the default-hide rule
+   whatever the source order. */
+#headerNewNoteBtn { display: none; font-size: 20px; line-height: 1; padding: 2px 9px; font-weight: 500; }
+@media (min-width: 721px) {
+  body:has(.layout.sidebar-collapsed) #headerNewNoteBtn,
+  body:has(.layout.focus-mode) #headerNewNoteBtn { display: inline-block; }
+}
+
 /* Hamburger — hidden on desktop, shown on mobile */
 .hamburger {
   display: none;
@@ -1825,6 +1841,29 @@ kbd {
   box-shadow: var(--shadow-lg);
 }
 .graph-view-canvas { flex: 1; min-height: 0; background: var(--bg); }
+.graph-view-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.graph-bar-toggle {
+  flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); border-radius: var(--r-pill); padding: 4px 12px;
+  font-size: 12px; cursor: pointer; font-family: inherit;
+}
+.graph-bar-toggle.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+/* One scrollable row, never wraps — on a phone it swipes sideways instead of
+   eating the graph's height. */
+.graph-legend { display: flex; gap: 6px; overflow-x: auto; flex: 1; min-width: 0; scrollbar-width: thin; padding-bottom: 2px; }
+.graph-legend-chip {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: 1px solid var(--border); color: var(--text);
+  border-radius: var(--r-pill); padding: 3px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  white-space: nowrap;
+}
+.graph-legend-chip:hover { background: var(--surface2); }
+.graph-legend-chip.active { border-color: var(--accent); color: var(--accent); }
+.graph-legend-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.graph-legend-count { color: var(--text-muted); font-size: 11px; }
 .graph-view-empty {
   flex: 1; display: flex; align-items: center; justify-content: center;
   color: var(--text-muted); font-size: 13px;
@@ -1958,6 +1997,19 @@ kbd {
      the click is a no-op on desktop (sidebar's always visible there). */
   #notesListTitle { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 }
+
+/* Header clipping, measured at real widths rather than eyeballed: the row's
+   natural width is ~430px on mobile and ~772px just above the mobile
+   breakpoint, so the right end — ☀ and the ⋯ overflow button itself — was
+   clipped off-screen at 390px (⋯), 360px (☀ and ⋯) and 721px (both). Files
+   mode, command palette and theme toggle move into the ⋯ menu at ≤780px;
+   they're all reachable there (the menu auto-lists whichever of these are
+   hidden, see HEADER_OVERFLOW_ITEMS), and the command palette also has its
+   Ctrl+K shortcut. 780 rather than 720 because the overflow starts at ~772,
+   not at the mobile breakpoint. */
+@media (max-width: 780px) {
+  #filesModeBtn, #paletteBtn, #themeBtn { display: none; }
+}
 </style>
 </head>
 <body>
@@ -1970,8 +2022,12 @@ kbd {
 
 <header>
   <button class="hamburger" id="hamburger" title="Toggle sidebar">☰</button>
-  <div class="logo">📝</div>
+  <img class="logo" src="icon.png" alt="ELM">
   <h1>ELM</h1>
+  <!-- Quick-create for when the sidebar's own "+ New Note" is out of sight:
+       sidebar collapsed or focus mode on desktop (see the CSS right after
+       #headerOverflowBtn). Same doNewNote as every other create entry point. -->
+  <button class="header-icon-btn" id="headerNewNoteBtn" title="New note">+</button>
   <div class="header-search">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="Filter notes…" autocomplete="off">
@@ -6367,10 +6423,17 @@ function toolbarAction(action) {
     // Markdown has no native alignment syntax (Obsidian doesn't either) —
     // raw HTML is the standard escape hatch and already survives
     // MARKDOWN_SANITIZE_OPTS untouched (DOMPurify's default allow-list
-    // covers div/align), confirmed by direct testing before adding this.
-    case 'alignleft':   insertAround(ta,'<div align="left">\n','\n</div>'); break;
-    case 'aligncenter': insertAround(ta,'<div align="center">\n','\n</div>'); break;
-    case 'alignright':  insertAround(ta,'<div align="right">\n','\n</div>'); break;
+    // covers div/align). The BLANK LINES inside the wrapper are load-bearing:
+    // in CommonMark an HTML block's content is passed through raw, not
+    // parsed as markdown, unless blank lines separate it from the tags.
+    // Without them this centered plain text fine but silently rendered
+    // **bold**, lists, headings, tables, images and callouts as literal
+    // source (an earlier "tested" claim here only checked that the align
+    // attribute survived sanitizing, not what was inside it).
+    // tests/e2e/align.spec.js drives the real toolbar to keep it that way.
+    case 'alignleft':   insertAround(ta,'<div align="left">\n\n','\n\n</div>'); break;
+    case 'aligncenter': insertAround(ta,'<div align="center">\n\n','\n\n</div>'); break;
+    case 'alignright':  insertAround(ta,'<div align="right">\n\n','\n\n</div>'); break;
     case 'codeblock': {
       const s = ta.selectionStart, e = ta.selectionEnd;
       const sel = ta.value.substring(s, e).replace(/\n$/, '');
@@ -6670,29 +6733,81 @@ const GRAPH_RELATIONSHIP_COLOR = '#6f9bff';
 const GRAPH_DIM_NODE_COLOR     = 'rgba(140,140,140,0.15)';
 const GRAPH_DIM_EDGE_COLOR     = 'rgba(140,140,140,0.08)';
 
-async function buildGraphData() {
+function hexToRgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+// `islands` (default on) groups notes into one visual island per folder: a
+// labelled hub node per folder, joined to each of its notes by a short, faint
+// "membership" edge, so the force layout pulls a folder's notes into a
+// cluster around its hub while hubs repel each other. Real links and typed
+// relationships then show up as the bridges BETWEEN islands. The hub is the
+// same trick used to cluster any graph without cluster-aware physics.
+async function buildGraphData({ islands: useIslands = true } = {}) {
   const [folders, notes] = await Promise.all([getAllFolders(), getAllNotes()]);
   const folderNameById = new Map(folders.map(f => [f.id, f.name || f.id]));
   const tagsById = new Map(notes.map(n => [n.id, n.tags || []]));
+  // A note's folder in BOTH storage modes. This used to read it only from
+  // vaultIndex (files mode), so IndexedDB-mode graphs had no folder at all
+  // and fell back to coloring by first tag.
+  const folderOfNote = new Map(notes.map(n => [n.id, n.folderId || null]));
 
   const nodes = [];
+  const membersByFolder = new Map();
   for (const [id, meta] of noteMetaIndex) {
     if (meta.isSyncConflict) continue; // excluded from every other note-facing view; same here
-    const folderId = storageMode === 'files' ? (vaultIndex.get(id)?.folderId ?? null) : null;
+    const folderId = folderOfNote.get(id) ?? null;
     let color;
     if (folderId) { color = colorForFolderName(folderNameById.get(folderId) || folderId); }
     else {
       const tags = tagsById.get(id);
       color = (tags && tags.length) ? colorForFolderName(tags[0]) : '#8a8a8a';
     }
-    nodes.push({ id, label: meta.title || 'Untitled Note', color: { background: color, border: color }, origColor: color });
+    nodes.push({ id, label: meta.title || 'Untitled Note', color: { background: color, border: color }, origColor: color, folderId });
+    if (folderId) {
+      if (!membersByFolder.has(folderId)) membersByFolder.set(folderId, []);
+      membersByFolder.get(folderId).push(id);
+    }
   }
 
+  // Link edges get a longer natural length when islands are on, so the
+  // bridges between islands are what stretch, not the islands themselves.
+  const linkLen = useIslands ? { length: 170 } : {};
   const edges = [];
   for (const [srcId, meta] of noteMetaIndex) {
     for (const link of meta.outgoingLinks) {
       const targetId = resolveWikilinkTarget(link.target);
-      if (targetId && targetId !== srcId) edges.push({ from: srcId, to: targetId, color: { color: GRAPH_EDGE_COLOR }, width: 1.5, arrows: 'to', origColor: GRAPH_EDGE_COLOR });
+      if (targetId && targetId !== srcId) edges.push({ from: srcId, to: targetId, color: { color: GRAPH_EDGE_COLOR }, width: 1.5, arrows: 'to', origColor: GRAPH_EDGE_COLOR, ...linkLen });
+    }
+  }
+
+  const islandList = [];
+  if (useIslands && membersByFolder.size) {
+    for (const [fid, memberIds] of membersByFolder) {
+      const name = folderNameById.get(fid) || fid;
+      const color = colorForFolderName(name);
+      const hubId = 'hub:' + fid;
+      islandList.push({ folderId: fid, hubId, name, color, memberIds });
+      nodes.push({
+        id: hubId, label: name, isHub: true, shape: 'box', mass: 4, margin: 8, borderWidth: 0,
+        color: { background: color, border: color }, origColor: color,
+        font: { color: '#ffffff', size: 16, bold: true },
+      });
+      const faint = hexToRgba(color, 0.5);
+      for (const id of memberIds) {
+        edges.push({ from: hubId, to: id, length: 55, width: 0.8, color: { color: faint }, origColor: faint, arrows: '', smooth: false, selectable: false, hoverWidth: 0 });
+      }
+    }
+    // Nested folders: tie a sub-folder's island to its parent's when the
+    // parent has notes of its own, so the archipelago mirrors the tree.
+    for (const isl of islandList) {
+      const cut = isl.folderId.lastIndexOf('/');
+      const parent = cut > 0 ? isl.folderId.slice(0, cut) : null;
+      if (parent && membersByFolder.has(parent)) {
+        const faint = hexToRgba('#a8a8a8', 0.4);
+        edges.push({ from: 'hub:' + parent, to: isl.hubId, length: 190, width: 1.2, dashes: [4, 4], color: { color: faint }, origColor: faint, arrows: '', smooth: false, selectable: false, hoverWidth: 0 });
+      }
     }
   }
 
@@ -6705,20 +6820,57 @@ async function buildGraphData() {
         for (const target of extractWikilinkTargetsFromValue(entry.meta[key])) {
           const targetId = resolveWikilinkTarget(target);
           if (targetId && targetId !== srcId) {
-            edges.push({ from: srcId, to: targetId, label: key, color: { color: GRAPH_RELATIONSHIP_COLOR }, width: 1.5, arrows: 'to', font: { size: 10, color: '#8a8a8a', strokeWidth: 0 }, origColor: GRAPH_RELATIONSHIP_COLOR });
+            edges.push({ from: srcId, to: targetId, label: key, color: { color: GRAPH_RELATIONSHIP_COLOR }, width: 1.5, arrows: 'to', font: { size: 10, color: '#8a8a8a', strokeWidth: 0 }, origColor: GRAPH_RELATIONSHIP_COLOR, ...linkLen });
           }
         }
       }
     }
   }
 
-  return { nodes, edges };
+  return { nodes, edges, islands: islandList };
+}
+
+// Folder islands are on by default; the choice is remembered. Wrapped in
+// try/catch because storage can throw (private windows, blocked site data).
+let graphIslandsOn = true;
+try { graphIslandsOn = localStorage.getItem('elm-graph-islands') !== '0'; } catch {}
+
+let graphIslands = [];   // the current graph's islands, for legend clicks
+
+// Fit the view to one island (its hub + every note in it), or to everything
+// when called with no island. maxZoomLevel stops a 2-note island from
+// zooming in absurdly far.
+function focusGraphIsland(hubId) {
+  if (!graphViewNetwork) return;
+  const isl = graphIslands.find(i => i.hubId === hubId);
+  const opts = { animation: { duration: 600, easingFunction: 'easeInOutQuad' }, maxZoomLevel: 1.4 };
+  if (isl) opts.nodes = [isl.hubId, ...isl.memberIds];
+  graphViewNetwork.fit(opts);
+  document.querySelectorAll('#graphLegend .graph-legend-chip').forEach(c =>
+    c.classList.toggle('active', (c.dataset.hub || '') === (isl ? isl.hubId : '')));
+}
+
+function renderGraphLegend() {
+  const bar = document.getElementById('graphLegend');
+  const toggle = document.getElementById('graphIslandsToggle');
+  toggle.setAttribute('aria-pressed', graphIslandsOn ? 'true' : 'false');
+  toggle.classList.toggle('active', graphIslandsOn);
+  if (!graphIslands.length) { bar.innerHTML = ''; return; }
+  bar.innerHTML =
+    `<button class="graph-legend-chip active" data-hub="" title="Fit every note on screen">Show all</button>` +
+    graphIslands.map(i =>
+      `<button class="graph-legend-chip" data-hub="${escHtml(i.hubId)}" title="Jump to ${escHtml(i.folderId)}">` +
+      `<span class="graph-legend-dot" style="background:${escHtml(i.color)}"></span>${escHtml(i.name)}` +
+      `<span class="graph-legend-count">${i.memberIds.length}</span></button>`
+    ).join('');
 }
 
 async function openGraphView() {
   document.getElementById('graphViewBackdrop').style.display = 'flex';
   const canvas = document.getElementById('graphViewCanvas');
-  const { nodes, edges } = await buildGraphData();
+  const { nodes, edges, islands } = await buildGraphData({ islands: graphIslandsOn });
+  graphIslands = islands;
+  renderGraphLegend();
 
   if (!nodes.length) {
     canvas.innerHTML = '<div class="graph-view-empty">No notes to graph yet.</div>';
@@ -6731,13 +6883,28 @@ async function openGraphView() {
   graphViewEdgesDS = new vis.DataSet(edges);
   graphViewNetwork = new vis.Network(canvas, { nodes: graphViewNodesDS, edges: graphViewEdgesDS }, {
     nodes: { shape: 'dot', size: 8, font: { color: '#ffffffcc', size: 12 } },
+    // Fixed seed so the same vault lays out the same way each time it's
+    // opened, rather than a different random start every visit (and so
+    // tests can assert on the layout).
+    layout: { randomSeed: 7 },
+    // vis-network's DEFAULT forceAtlas2Based parameters, on purpose. An
+    // earlier attempt hand-tuned them (weaker centralGravity, avoidOverlap,
+    // custom spring/damping) and the whole graph then orbited the origin
+    // forever — `stabilized` never fired and every island drifted ~330px in
+    // circles, which also made "jump to island" land on empty canvas.
+    // Measured six variants against drift: only the defaults settled (0px,
+    // stabilized:true) while still clustering well (the hubs and edge
+    // lengths do the grouping, not the physics constants).
     physics: { solver: 'forceAtlas2Based', stabilization: { iterations: 150 } },
     interaction: { hover: true, tooltipDelay: 150 },
   });
   graphViewNetwork.on('click', params => {
     if (!params.nodes.length) return;
+    const id = params.nodes[0];
+    // A folder hub isn't a note — clicking it frames its island instead.
+    if (typeof id === 'string' && id.startsWith('hub:')) { focusGraphIsland(id); return; }
     closeGraphView();
-    flushAndSwitchTo(params.nodes[0]);
+    flushAndSwitchTo(id);
   });
 
   // Hover, not click, for the connected-neighbors highlight — click already
@@ -8582,6 +8749,12 @@ function initEvents() {
     { target: 'dailyNoteBtn',  label: '📅 Today\'s note' },
     { target: 'graphViewBtn',  label: '🕸 Graph view' },
     { target: 'publishSiteBtn', label: '🌐 Publish site' },
+    // Visible as their own header buttons on wide screens (so the filter
+    // below drops them there); moved in here at ≤780px to stop the header
+    // clipping — see the matching CSS at the end of the stylesheet.
+    { target: 'filesModeBtn', label: '🗂 Files mode' },
+    { target: 'paletteBtn',   label: '⌘ Command palette' },
+    { target: 'themeBtn',     label: '☀ Light / dark theme' },
   ];
   document.getElementById('headerOverflowBtn').addEventListener('click', e => {
     const popover = document.getElementById('headerOverflowPopover');
@@ -8636,6 +8809,7 @@ function initEvents() {
   document.getElementById('newNoteBtn').addEventListener('click', doNewNote);
   document.getElementById('createFirstNote')?.addEventListener('click', doNewNote);
   document.getElementById('mobileNewNoteFab')?.addEventListener('click', doNewNote);
+  document.getElementById('headerNewNoteBtn')?.addEventListener('click', doNewNote);
 
   // Note list click
   document.getElementById('notesList').addEventListener('click', async e => {
@@ -9003,6 +9177,16 @@ function initEvents() {
   document.getElementById('graphViewBtn').addEventListener('click', openGraphView);
   document.getElementById('publishSiteBtn').addEventListener('click', () => publishSiteExport(null));
   document.getElementById('graphViewClose').addEventListener('click', closeGraphView);
+  // Legend: event delegation, since the chips are re-rendered on every open.
+  document.getElementById('graphLegend').addEventListener('click', e => {
+    const chip = e.target.closest('.graph-legend-chip');
+    if (chip) focusGraphIsland(chip.dataset.hub || null);
+  });
+  document.getElementById('graphIslandsToggle').addEventListener('click', () => {
+    graphIslandsOn = !graphIslandsOn;
+    try { localStorage.setItem('elm-graph-islands', graphIslandsOn ? '1' : '0'); } catch {}
+    openGraphView(); // rebuilds with/without hubs
+  });
   document.getElementById('graphViewBackdrop').addEventListener('click', e => {
     if (e.target.id === 'graphViewBackdrop') closeGraphView();
   });
@@ -9439,6 +9623,12 @@ done: false
     <div class="kb-header">
       <span>Graph view</span>
       <button class="kb-close" id="graphViewClose">✕</button>
+    </div>
+    <!-- Controls + legend. A scrollable chip row rather than an overlay
+         panel: it can't cover the graph, and it works unchanged on a phone. -->
+    <div class="graph-view-bar">
+      <button class="graph-bar-toggle" id="graphIslandsToggle" type="button" aria-pressed="true" title="Group notes into one island per folder">Folder islands</button>
+      <div class="graph-legend" id="graphLegend"></div>
     </div>
     <div class="graph-view-canvas" id="graphViewCanvas"></div>
   </div>
