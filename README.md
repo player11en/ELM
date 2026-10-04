@@ -32,7 +32,8 @@ ELM is an attempt at that missing organisational layer, built local-first.
 - Typed relationships — any frontmatter key holding a `[[link]]` is a
   relationship, and the key *is* the type
 - Query blocks and task rollup — live lists built from your own notes
-- Graph view of links and typed relationships
+- Graph view of links and typed relationships, grouped into one labelled
+  island per folder, with a legend that jumps to an island
 - Daily notes
 
 **Finding**
@@ -159,6 +160,25 @@ against any of these are welcome.
       storage mechanism. Picked over the plugin API deliberately: this
       benefits every existing user immediately, with no community/ecosystem
       prerequisite the way a plugin API would need
+- [ ] Trash you can see — deleted notes already go to `.trash/` (kept 30
+      days, then purged) but there is no way to browse or restore them
+      in-app; recovering one means digging through the folder by hand.
+      Found by checking, not reported: the filename already encodes the
+      original name and delete time, so listing and restoring is mostly UI
+- [ ] Subfolders you can create in-app — nested folders on disk already
+      show up indented (to 5 levels) and notes can be moved into them, but
+      "+ New Folder" only makes top-level ones (it strips `/` from the
+      name). Wanted alongside it: a collapsible tree, and clicking a
+      parent folder including its sub-folders' notes with recursive counts
+      (today both are direct-children only)
+- [ ] Note hierarchy view — notes can already be structured as a tree
+      today: a `parent: [[Some Note]]` frontmatter key is a typed
+      relationship, so it already draws a labelled edge in the graph and
+      lists in the Links tab. What's missing is a *tree view* over it
+      (same shape of idea as the Kanban item: a view over existing data,
+      not a new storage model)
+- [ ] Show the app version somewhere (Settings/About) — bug reports
+      currently can't say which build they're on
 - [ ] Note properties badge — a compact rendered strip at the top of a note
       showing key frontmatter fields (status, tags, relationships) at a
       glance. Cheap: frontmatter is already parsed and rendered, this is
