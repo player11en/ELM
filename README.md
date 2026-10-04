@@ -302,6 +302,16 @@ writing means flipping Edit ↔ Preview.
 - [ ] **T1 · Multi-vault quick-switch** — every comparable app (Obsidian,
       Logseq, Joplin) has one; ELM doesn't.
 - [ ] **T2 · Per-note/folder encryption** — see Deferred for the design notes.
+- [ ] **T3 · Conflict compare and resolve.** Today a Syncthing
+      `.sync-conflict-…` file is only *listed* under "Sync Conflicts"; the user
+      has to compare and merge by hand. Add a "Compare" action that opens the
+      conflict copy against the live note in the existing diff modal (the one
+      built for version history) with "Keep mine", "Keep theirs" and "Keep
+      both" (the last saves the other copy as a normal note). Conflict copies
+      go to `.trash/` rather than being deleted outright. Small, and it reuses
+      what exists, but its real weight comes later: any sync ELM ever provides
+      itself must have this resolver first — see "Own sync" under Deferred.
+- [ ] **T4 · Own sync (design only, not scheduled)** — see Deferred.
 
 ### Platform and delivery track
 
@@ -341,6 +351,22 @@ writing means flipping Edit ↔ Preview.
 
 Kept here with their reasoning so the decision doesn't get re-argued from
 scratch — and so it's clear what would have to change to pick them up.
+
+- [ ] Own sync (T4) — ELM relies on the user's file sync (Syncthing, Dropbox,
+      etc.) and deliberately ships none, which is why vaults stay plain
+      files with no account and no server. Providing sync would change
+      that, so it is deferred until there is a reason strong enough to
+      outweigh it. If it is ever picked up, in this order:
+      - **Prerequisites first:** the conflict resolver (T3), and a decision
+        on encryption (T2) — a sync server that can read notes contradicts
+        the privacy pitch, so end-to-end encryption would have to land with
+        it, not after.
+      - **Prefer syncing files over inventing a protocol:** e.g. WebDAV or
+        an S3-style bucket the user owns, using the same plain files. No
+        ELM-hosted service.
+      - **Conflicts are the hard part, not transport.** Last-writer-wins
+        loses text; the diff/keep-mine/keep-theirs resolver is the minimum,
+        and per-note merge only for notes that diverged.
 
 - [ ] Alias/shorthand presets (`;/name` → expands) — not just a URL
       shortener; the stronger case is naming: set `;/main` once for a
