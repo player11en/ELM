@@ -22,12 +22,25 @@ module.exports = defineConfig({
   // removes the possibility, rather than just cleaning up after the fact.
   outputDir: path.join(os.tmpdir(), 'elm-playwright-results'),
   fullyParallel: false, // several specs create/reset shared IndexedDB/OPFS state — keep serial for now
+  // Capped at 2 workers, 60s per test. With the default (half the cores = 4
+  // here) plus the graph specs' real physics simulation, a loaded machine
+  // starved the other specs: two unrelated tests failed with 30s timeouts
+  // and ERR_NETWORK_IO_SUSPENDED on one run, then passed alone in 9-12s.
+  // That's contention, not a regression — fewer parallel browsers and a
+  // bounded-but-roomier timeout stops it reading as a failure.
+  workers: 2,
+  timeout: 60000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   webServer: {
     // Serve the repo root (one level up from here), not tests/ itself —
     // index.html and the rest of the shipped app live there.
-    command: 'npx http-server .. -p 8123 -c-1',
+    // The locally-installed binary run directly, NOT `npx http-server`: npx
+    // re-resolves the package against the registry on every start, which
+    // took 15+ seconds on a slow day and blew the 30s start window below
+    // (the suite timed out before a single test ran). It's a pinned
+    // devDependency now, so this is local, instant, and works offline.
+    command: 'node node_modules/http-server/bin/http-server .. -p 8123 -c-1',
     port: 8123,
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
