@@ -146,31 +146,202 @@ README for why and how.
 
 ## Roadmap
 
-Open, roughly in the order they'll get picked up. Not promises, and PRs
-against any of these are welcome.
+Open work, grouped by *track* and ordered by *release lane*. Not promises, no
+dates, and PRs against any of it are welcome. Done items move to "Shipped"
+at the bottom; the rest of this section is deliberately written so that each
+item can be picked up on its own without breaking the others.
 
-- [ ] Publish the Tauri wrapper (Windows/Linux/Android build project) so
-      those platforms are self-buildable, not just downloadable. Blocked on
-      separating out the Android release-signing keystore first — it
-      currently lives inside that project and must never become public
-- [ ] Attach prebuilt Windows/Linux/Android binaries to a GitHub Release
-      (built and working; not yet published — web is shipping first)
-- [ ] Note properties badge — a compact rendered strip at the top of a note
-      showing key frontmatter fields (status, tags, relationships) at a
-      glance. Cheap: frontmatter is already parsed and rendered, this is
-      mostly a display format. The one idea worth taking from comparing
-      against Confluence conceptually — most of what it does well (spaces,
-      labels, macros, page history) ELM already has a leaner version of,
-      or the idea doesn't fit local-first (watchers/notifications need a
-      server; real-time inline comments need either that or an offline-
-      merge model neither of which fits a solo/small-team-via-file-sync
-      tool)
-- [ ] Kanban board — as a *view*, not a new subsystem: group notes into
-      columns by one frontmatter field (e.g. `status:`), drag a card to
-      change that field and save. Reuses query-block infra and frontmatter
-      I/O that already exist; the new work is the board layout and the
-      drop handler. Start with sort-by-date within a column rather than a
-      persisted per-column order — free, no new ordinal field needed
+### How we add things without breaking the app
+
+These rules are why the app has stayed one file with no build step and still
+has a green test suite. New work follows them, or says why not.
+
+1. **Files stay the truth.** A note is plain markdown, byte-faithful. A
+   feature may *view* or *index* it; it may not rewrite a note into a shape
+   the user didn't type. This is why in-place editing of the rendered HTML
+   (contenteditable, the Notion/Confluence way) is rejected — see the editor
+   track below.
+2. **Views over data, not new storage.** Trash, the note tree, version
+   history, the graph and (next) Kanban all read data that already exists
+   (folders, frontmatter, `.trash/`, `.stversions/`). New storage formats are
+   the expensive, irreversible kind of change; avoid them.
+3. **One seam at a time.** Before replacing a core subsystem (the editor,
+   storage), put an adapter in front of it — the way `vaultAdapter` fronts the
+   file system — and ship that refactor *alone*, with every existing test
+   passing unchanged. Only then swap the engine behind the seam.
+4. **Same shape for every view.** Pure logic goes in `js/lib/` (unit-tested
+   with `node:test`), the renderer/modal goes in `index.html`, and a
+   Playwright spec drives it. Trash, tree and history already follow this.
+5. **Risky means flagged.** Anything that changes how writing feels (live
+   preview) or how files are stored (encryption) ships behind a setting,
+   default off, until real use says it's safe to flip.
+6. **Test gate.** Every item lands with a spec. A bug gets a failing test
+   first. The full suite (`npm test` in `tests/`) is green before a commit
+   goes to `main`, and again before a release build.
+7. **Check all the surfaces.** Each feature is checked at phone width
+   (≤780px, Android) and in both storage modes, or explicitly marked
+   "files mode only" in its UI (Trash, tree and history already are).
+8. **Vendoring has a fixed checklist.** New library → file in `vendor/`,
+   license text in `vendor/LICENSES/`, row in the README table, entry in
+   `sw.js` PRECACHE, service-worker cache version bumped.
+9. **Release checklist.** Version bumped in `index.html` (`APP_VERSION`),
+   `tauri.conf.json`, `package.json` and `Cargo.toml` (a spec checks the
+   first two agree) → full tests → builds → Android signing fingerprint
+   verified → commit → tag `vX.Y.Z` → GitHub Release.
+
+### Release lanes
+
+Direction, not a schedule. Each lane is shippable on its own.
+
+**Next (1.2) — make writing better, safely**
+- [ ] **E0 · Editor adapter** — no behavior change (see Editor track)
+- [ ] **E1 · Editor quick wins** on the existing textarea (see Editor track)
+- [ ] **V0 · `setProperty` helper** — one tested function that reads and
+      writes a single frontmatter field. A prerequisite for the next two
+      items; not user-visible by itself
+- [ ] **V1 · Note properties badge** (below)
+- [ ] **P0 · Release automation** (see Platform track)
+
+**Then (1.3) — structure**
+- [ ] **V2 · Kanban and table views** over properties (below)
+- [ ] **E1b · Math and diagrams** in the preview
+- [ ] **P1 · Linux build in CI**, so Linux no longer depends on a machine
+      someone can test on
+
+**Then (1.4) — the big one**
+- [ ] **E2 · Live preview editor**, behind a setting, default off
+
+**After that**
+- Encryption, multi-vault, iOS/macOS, plugin API, alias presets. All
+  deferred on purpose; see "Deferred" for the reasoning, which is kept.
+
+### Editor track
+
+Today: a textarea with Edit / Preview / Split. Content support is wide
+(GFM tables, task checkboxes, highlighted code, callouts, `==highlight==`,
+transclusion, wikilinks with autocomplete) and the split preview updates as
+you type. What's missing is the *typing experience*: no single-pane live
+rendering, no table insert/edit, no math, no diagrams, no `/` menu. On a phone
+the missing live preview hurts most — Split is unusable at that width, so
+writing means flipping Edit ↔ Preview.
+
+- [ ] **E0 · Editor adapter (refactor only).** Route every direct use of
+      `editorTextarea` (26 references, plus ~22 selection/cursor calls) through
+      one small surface: get/set value, get/replace selection, focus, change
+      event, insert-at-cursor, scroll position. Ship with zero visible change.
+      *Done when* the whole existing suite passes untouched and
+      `grep editorTextarea` hits only the adapter. This is the item that makes
+      everything below cheap and safe — and it's valuable even if live preview
+      is never built (it also unlocks testing editing logic without a DOM).
+- [ ] **E1 · Quick wins on the current textarea.** Each is independent:
+      - table helper: insert a table, and re-align the pipes of the table
+        under the cursor (text only — no hidden state)
+      - list continuation: Enter in a list continues it; Enter on an empty
+        item ends it; Tab / Shift-Tab indent
+      - click a block in the preview → jump the editor to that source line;
+        scroll-sync in Split
+      - `/` insert menu for the toolbar's Insert actions
+- [ ] **E1b · Math and diagrams.** KaTeX and Mermaid, loaded **lazily** (only
+      when a note actually contains `$…$` or a `mermaid` fence) so ordinary
+      notes pay nothing. Both go through the existing DOMPurify path; Mermaid
+      runs in its strict security level. Vendoring checklist applies.
+- [ ] **E2 · Live preview (CodeMirror 6, Obsidian-style).** The text stays
+      the source of truth. Syntax marks are hidden on lines the cursor isn't
+      on, and tables, images, checkboxes and callouts render as widgets;
+      nothing is ever converted back from HTML, so a saved file is exactly
+      what was typed. Plain Edit / Preview / Split remain available.
+      *Decision recorded:* editable rendered HTML (contenteditable) is **not**
+      the plan. Converting HTML back to markdown is lossy for exactly the
+      syntax that makes ELM files portable (wikilinks, callouts,
+      transclusion, query blocks, alignment HTML, `==highlight==`) and would
+      silently rewrite users' files. Confluence's "markdown" is an import
+      step on its own document format, which is the opposite of this
+      project's pitch.
+      Honest costs to plan for:
+      - CodeMirror 6 ships as ES modules, but there is no build step. It gets
+        vendored as **one prebuilt file** produced once, outside the app tree,
+        and committed like `vis-network` — a vendor build, not an app build.
+      - Android keyboards/IME and large notes are the realistic failure
+        points; both need real-device checks, not just headless ones.
+      - Wikilink autocomplete, the toolbar, version-history restore and
+        find all have to speak to the new editor — which is exactly what E0
+        pays for in advance.
+      *Gate:* behind a setting, default off; a parity spec runs the editing
+      specs against both engines; flip the default only after real use.
+
+### Views track
+
+- [ ] **V0 · `setProperty(noteId, key, value)`** — read one frontmatter
+      field, write it back through the normal save path (so the mtime/conflict
+      checks still apply), preserving every other key and the body. Unit-test
+      the parsing/serialising half in `js/lib/`.
+- [ ] **V1 · Note properties badge** — a compact strip at the top of a note
+      showing key frontmatter fields (status, tags, relationships). Display
+      only; frontmatter is already parsed and rendered. (Comparing against
+      Confluence: most of what it does well — spaces, labels, macros, page
+      history — ELM has a leaner version of, or the idea doesn't fit
+      local-first: watchers and notifications need a server, and real-time
+      inline comments need that or an offline-merge model, neither of which
+      fits a solo/small-team-via-file-sync tool.)
+- [ ] **V2 · Kanban and table views** — views, not a new subsystem. Columns
+      (or table rows) come from one frontmatter field such as `status:`; a
+      card drag calls `setProperty` and saves. Reuses query-block
+      infrastructure. Start with sort-by-date inside a column — no persisted
+      per-column order, so no new ordinal field. A table view (sort/filter by
+      property) shares the same query and `setProperty` code.
+- [ ] **V3 · Images and PDFs as first-class objects**, not attachments
+      hanging off a note.
+- [ ] **V4 · Timeline / temporal view.**
+
+### Data and trust track
+
+- [ ] **T0 · Own snapshots for non-Syncthing users.** Version history today
+      only surfaces Syncthing's `.stversions/`. A lightweight local snapshot
+      store would give everyone else the same diff/restore. A real new
+      storage mechanism, so it follows rule 2's caution: design first.
+- [ ] **T1 · Multi-vault quick-switch** — every comparable app (Obsidian,
+      Logseq, Joplin) has one; ELM doesn't.
+- [ ] **T2 · Per-note/folder encryption** — see Deferred for the design notes.
+
+### Platform and delivery track
+
+- [ ] **P0 · Release automation.** A GitHub Actions workflow on a version
+      tag that builds the Windows installer and attaches it to the Release.
+      Android needs the signing key as a CI secret — decide that deliberately
+      rather than rushing it. Replaces today's by-hand release checklist.
+- [ ] **P1 · Linux build in CI** (`.deb`/AppImage/`.rpm` from an Ubuntu
+      runner). The current Linux packages are 1.0.0 and untested on a real
+      machine; CI at least proves they build, and a smoke run can launch them.
+- [ ] **P2 · Publish the Tauri wrapper** (Windows/Linux/Android project) so
+      those platforms are self-buildable. Blocked on separating the Android
+      release-signing keystore from that project first — it currently lives
+      inside it and must never become public.
+- [ ] **P3 · macOS build** (Tauri supports it; needs a Mac and Xcode to build
+      and sign).
+- [ ] **P4 · iOS build** — a real port, not a checkbox: the storage layer
+      assumes real paths on disk, which iOS's sandbox doesn't give you.
+      Similar scope to the Android SAF work already done.
+
+### Quality track
+
+- [ ] **Q0 · `CONTRIBUTING.md`** — how to build, where the code lives, the
+      rules above, PR expectations.
+- [ ] **Q1 · Large-vault check.** Generate a vault of several thousand notes
+      and measure open, search and graph. Not yet measured; do it before
+      claiming scale, and keep the numbers in the repo.
+- [ ] **Q2 · Accessibility pass** — keyboard-only use of the new modals
+      (Trash, tree, history), focus handling, contrast in both themes. Not
+      yet audited.
+- [ ] **Q3 · Split `index.html` into several `<script src>` files** once
+      concurrent contribution is actually a friction (verified feasible
+      without a bundler — see git history for the analysis). Natural moment:
+      alongside E2, as `js/editor/`.
+
+### Deferred (on purpose)
+
+Kept here with their reasoning so the decision doesn't get re-argued from
+scratch — and so it's clear what would have to change to pick them up.
+
 - [ ] Alias/shorthand presets (`;/name` → expands) — not just a URL
       shortener; the stronger case is naming: set `;/main` once for a
       character/place, reuse it everywhere instead of retyping (and
@@ -212,15 +383,6 @@ against any of these are welcome.
         scope (a presets UI, autocomplete, the render extension, cascading
         lookup) for a currently-hypothetical pain point — worth building
         once there's an actual recurring case driving it, not speculatively
-- [ ] Images and PDFs as first-class objects, not just attachments hanging
-      off a note
-- [ ] Timeline / temporal view
-- [ ] macOS build (Tauri already supports it; needs a Mac + Xcode to build
-      and sign)
-- [ ] iOS build — real port, not a checkbox: the storage layer assumes real
-      paths on disk, which iOS's sandbox doesn't give you. Similar scope to
-      the Android SAF work already done
-- [ ] `CONTRIBUTING.md` — how to build, where the code lives, PR expectations
 - [ ] Per-note/folder encryption — deferred, not because it's a bad idea but
       because it's real, costly work competing against higher-value items.
       Design notes for whenever it's picked up:
@@ -247,11 +409,6 @@ against any of these are welcome.
         session just to keep searching working. Opt-in, per-note or
         per-folder, is the only shape that keeps this from compromising the
         rest of the vault.
-- [ ] Multi-vault quick-switch — every comparable app (Obsidian, Logseq,
-      Joplin) has one; ELM currently doesn't
-- [ ] Split `index.html` into multiple `<script src>` files once concurrent
-      contribution is actually a friction (verified feasible without a
-      bundler — see git history for the analysis if it comes back)
 - [ ] Plugin/extension API — only once real, repeated demand shows up;
       building it speculatively is the mistake this item exists to avoid.
       Design notes for whenever that demand shows up:
@@ -272,15 +429,18 @@ against any of these are welcome.
         folder convention, manifest format, enable/disable UI, all
         unbuilt.
 
-Shipped and not listed here: wikilinks, backlinks, graph view, daily notes,
-full-text + files-mode search, interactive task checkboxes, static-site
-publishing, JSON export/import, `==highlight==` syntax, callouts,
-transclusion, entity templates, query blocks, a unit + e2e test suite
-running in CI on every push and PR (see Testing below), note version
-history (Syncthing's `.stversions/`: History tab with diff and restore),
-a Trash view with restore, in-app subfolders (collapsible tree, recursive
-counts), a note tree view over `parent:` properties, and the app version
-in the sidebar footer.
+### Shipped
+
+Wikilinks, backlinks, graph view with folder islands, daily notes, full-text
+and files-mode search, interactive task checkboxes, static-site publishing,
+JSON export/import, `==highlight==` syntax, callouts, transclusion, entity
+templates, query blocks, text alignment, a unit + e2e test suite running in CI
+on every push and PR (see Testing below), note version history (Syncthing's
+`.stversions/`: History tab with diff and restore), a Trash view with
+restore, in-app subfolders (collapsible tree, recursive counts), a note tree
+view over `parent:` properties, the app version in the sidebar footer, and
+prebuilt Windows and Android downloads on GitHub Releases (Linux pending —
+see P1).
 
 ## Third-party libraries
 
