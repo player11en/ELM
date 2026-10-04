@@ -88,6 +88,48 @@ function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 // miscategorized (see plan §HARD-1, sync-robustness plan).
 const SYNC_CONFLICT_RE = /\.sync-conflict-\d{8}-\d{6}-[a-z0-9]+\.md$/i;
 
+// Trash file names: `<ISO stamp, ':' and '.' -> '-'>__<encodeURIComponent(origin path)>`.
+// Encoding the whole vault path (not just the leaf) is what lets the Trash
+// view put a note back where it came from. Names over the filesystem limit
+// fall back to the leaf alone (restores to the vault root). Entries written
+// before this existed hold a bare leaf name and parse the same way.
+const TRASH_STAMP_RE = /^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)__(.+)$/;
+const TRASH_NAME_MAX = 200;
+
+function buildTrashName(path, now = new Date()) {
+  const stamp = now.toISOString().replace(/[:.]/g, '-');
+  const full = encodeURIComponent(path);
+  const leaf = path.split('/').pop();
+  const tail = (stamp.length + 2 + full.length <= TRASH_NAME_MAX) ? full : encodeURIComponent(leaf);
+  return `${stamp}__${tail}`;
+}
+
+// -> { ts, path } or null when the name isn't one of ours.
+function parseTrashName(name) {
+  const m = name.match(TRASH_STAMP_RE);
+  if (!m) return null;
+  const ts = Date.parse(m[1].replace(/T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, 'T$1:$2:$3.$4Z'));
+  if (Number.isNaN(ts)) return null;
+  let path;
+  try { path = decodeURIComponent(m[2]); } catch { path = m[2]; }
+  return { ts, path };
+}
+
+// Syncthing file versioning: a changed file's old copy is kept as
+// <name>~YYYYMMDD-HHMMSS.<ext> (tag in LOCAL time) under .stversions/.
+function buildStversionRegex(name) {
+  const m = name.match(/^(.*)\.md$/i);
+  if (!m) return null;
+  return new RegExp(`^${escapeRegex(m[1])}~(\\d{8}-\\d{6})\\.md$`, 'i');
+}
+
+// "20260916-143022" -> epoch ms in the runtime's local zone, or null.
+function parseStversionTag(tag) {
+  const m = tag.match(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})$/);
+  if (!m) return null;
+  return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).getTime();
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     RESERVED_DIR_NAMES,
@@ -99,5 +141,9 @@ if (typeof module !== 'undefined' && module.exports) {
     resolveRelativeVaultPath,
     escapeRegex,
     SYNC_CONFLICT_RE,
+    buildTrashName,
+    parseTrashName,
+    buildStversionRegex,
+    parseStversionTag,
   };
 }

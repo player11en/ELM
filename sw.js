@@ -1,4 +1,4 @@
-const CACHE = 'elm-v7';
+const CACHE = 'elm-v8';
 
 // The 11 libraries + pdf.js's worker are vendored locally under vendor/ now
 // (see index.html's script tags), not loaded from CDN. Cache key bumped
@@ -28,6 +28,7 @@ const PRECACHE = [
   './vendor/minisearch.min.js',
   './vendor/vis-network.min.js',
   './vendor/fflate.min.js',
+  './vendor/diff.min.js',
 ];
 
 self.addEventListener('install', event => {

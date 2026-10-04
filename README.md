@@ -155,30 +155,6 @@ against any of these are welcome.
       currently lives inside that project and must never become public
 - [ ] Attach prebuilt Windows/Linux/Android binaries to a GitHub Release
       (built and working; not yet published — web is shipping first)
-- [ ] **Note version history (recommended next)** — surface Syncthing's
-      `.stversions/` first (diff + restore), before inventing a separate
-      storage mechanism. Picked over the plugin API deliberately: this
-      benefits every existing user immediately, with no community/ecosystem
-      prerequisite the way a plugin API would need
-- [ ] Trash you can see — deleted notes already go to `.trash/` (kept 30
-      days, then purged) but there is no way to browse or restore them
-      in-app; recovering one means digging through the folder by hand.
-      Found by checking, not reported: the filename already encodes the
-      original name and delete time, so listing and restoring is mostly UI
-- [ ] Subfolders you can create in-app — nested folders on disk already
-      show up indented (to 5 levels) and notes can be moved into them, but
-      "+ New Folder" only makes top-level ones (it strips `/` from the
-      name). Wanted alongside it: a collapsible tree, and clicking a
-      parent folder including its sub-folders' notes with recursive counts
-      (today both are direct-children only)
-- [ ] Note hierarchy view — notes can already be structured as a tree
-      today: a `parent: [[Some Note]]` frontmatter key is a typed
-      relationship, so it already draws a labelled edge in the graph and
-      lists in the Links tab. What's missing is a *tree view* over it
-      (same shape of idea as the Kanban item: a view over existing data,
-      not a new storage model)
-- [ ] Show the app version somewhere (Settings/About) — bug reports
-      currently can't say which build they're on
 - [ ] Note properties badge — a compact rendered strip at the top of a note
       showing key frontmatter fields (status, tags, relationships) at a
       glance. Cheap: frontmatter is already parsed and rendered, this is
@@ -300,7 +276,11 @@ Shipped and not listed here: wikilinks, backlinks, graph view, daily notes,
 full-text + files-mode search, interactive task checkboxes, static-site
 publishing, JSON export/import, `==highlight==` syntax, callouts,
 transclusion, entity templates, query blocks, a unit + e2e test suite
-running in CI on every push and PR (see Testing below).
+running in CI on every push and PR (see Testing below), note version
+history (Syncthing's `.stversions/`: History tab with diff and restore),
+a Trash view with restore, in-app subfolders (collapsible tree, recursive
+counts), a note tree view over `parent:` properties, and the app version
+in the sidebar footer.
 
 ## Third-party libraries
 
@@ -317,6 +297,7 @@ Each remains under its own license and copyright:
 | idb | IndexedDB wrapper | ISC |
 | vis-network | Graph view | MIT / Apache-2.0 |
 | fflate | Zip for site export | MIT |
+| jsdiff | Note version-history diff | BSD-3-Clause |
 | pdf.js | PDF reading | Apache-2.0 |
 | mammoth | DOCX reading | BSD-2-Clause |
 | SheetJS (xlsx) | Spreadsheet reading | Apache-2.0 |

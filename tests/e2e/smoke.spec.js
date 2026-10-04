@@ -89,7 +89,7 @@ test('create notes, use core UI features, and survive a reload', async ({ page }
   await page.waitForTimeout(250);
   const overflow = await page.$$eval('#headerOverflowPopover .popover-menu-item', els => els.map(e => e.textContent));
   expect(overflow, 'overflow menu contents changed').toEqual(
-    ['⬆ Backup', '⬇ Restore', '📖 Style guide', '📅 Today\'s note', '🕸 Graph view', '🌐 Publish site']
+    ['⬆ Backup', '⬇ Restore', '📖 Style guide', '📅 Today\'s note', '🕸 Graph view', '🌳 Note tree', '🌐 Publish site']
   );
   await page.click('#headerOverflowPopover .popover-menu-item:has-text("Style guide")');
   await page.waitForTimeout(400);

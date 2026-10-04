@@ -110,3 +110,42 @@ test('RESERVED_DIR_NAMES and WINDOWS_RESERVED_NAMES are the expected sets', () =
   assert.ok(WINDOWS_RESERVED_NAMES.has('lpt9'));
   assert.ok(!WINDOWS_RESERVED_NAMES.has('notes'));
 });
+
+test('trash names round-trip the full origin path', () => {
+  const { buildTrashName, parseTrashName } = require('../../js/lib/pathUtils.js');
+  const when = new Date('2026-03-04T05:06:07.089Z');
+  const name = buildTrashName('Lore/Book 1/Ch #1.md', when);
+  assert.ok(!name.includes('/'), 'a single file name, no separators');
+  assert.deepStrictEqual(parseTrashName(name), { ts: when.getTime(), path: 'Lore/Book 1/Ch #1.md' });
+});
+
+test('trash names fall back to the leaf when the path is too long', () => {
+  const { buildTrashName, parseTrashName } = require('../../js/lib/pathUtils.js');
+  const long = `${'x'.repeat(80)}/${'y'.repeat(80)}/${'z'.repeat(80)}/note.md`;
+  const name = buildTrashName(long);
+  assert.ok(name.length <= 255);
+  assert.strictEqual(parseTrashName(name).path, 'note.md');
+});
+
+test('parseTrashName reads legacy leaf-only entries and rejects foreign names', () => {
+  const { parseTrashName } = require('../../js/lib/pathUtils.js');
+  assert.strictEqual(parseTrashName('2026-01-02T03-04-05-006Z__old.md').path, 'old.md');
+  assert.strictEqual(parseTrashName('readme.txt'), null);
+  assert.strictEqual(parseTrashName('2026-13-99T99-99-99-999Z__x.md'), null);
+});
+
+test('buildStversionRegex matches only this note\'s Syncthing versions', () => {
+  const { buildStversionRegex } = require('../../js/lib/pathUtils.js');
+  const re = buildStversionRegex('My Note (v2).md');
+  assert.ok(re.test('My Note (v2)~20260916-143022.md'));
+  assert.ok(!re.test('My Note (v2)~20260916-143022.png'));
+  assert.ok(!re.test('Other~20260916-143022.md'));
+  assert.ok(!re.test('My Note (v2).md'));
+  assert.strictEqual(buildStversionRegex('image.png'), null);
+});
+
+test('parseStversionTag reads Syncthing local-time tags', () => {
+  const { parseStversionTag } = require('../../js/lib/pathUtils.js');
+  assert.strictEqual(parseStversionTag('20260916-143022'), new Date(2026, 8, 16, 14, 30, 22).getTime());
+  assert.strictEqual(parseStversionTag('2026-09-16'), null);
+});

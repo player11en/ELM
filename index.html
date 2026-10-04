@@ -400,6 +400,34 @@ header h1 {
 .folder-item:hover .folder-publish { opacity: 1; }
 .folder-publish:hover { color: var(--accent); }
 
+/* "+ subfolder" — revealed on hover like the other row actions, but kept
+   faintly visible on touch devices where :hover never happens (this is the
+   only way to nest a folder, so it can't be unreachable on a phone). */
+.folder-add-sub {
+  opacity: 0; background: none; border: none; color: var(--text-muted);
+  cursor: pointer; font-size: 15px; line-height: 1; padding: 0 3px; flex-shrink: 0;
+}
+.folder-item:hover .folder-add-sub { opacity: 1; }
+.folder-add-sub:hover { color: var(--accent); }
+@media (hover: none) { .folder-add-sub { opacity: .6; } }
+
+/* Collapse caret — a CSS triangle rather than a glyph, so it can't turn into
+   a missing-glyph box under a font set that lacks the arrow. */
+.folder-toggle, .folder-toggle-spacer { width: 14px; height: 14px; flex-shrink: 0; }
+.folder-toggle {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--text-muted); position: relative;
+}
+.folder-toggle::before {
+  content: ''; position: absolute; left: 3px; top: 3px;
+  border-style: solid; border-width: 4px 0 4px 6px;
+  border-color: transparent transparent transparent currentColor;
+  transform: rotate(90deg); transform-origin: 3px 4px;   /* expanded: points down */
+  transition: transform var(--t-fast);
+}
+.folder-toggle.collapsed::before { transform: rotate(0deg); }   /* collapsed: points right */
+.folder-toggle:hover { color: var(--text); }
+
 .new-folder-wrap { padding: 4px 10px 8px; }
 .add-folder-btn {
   background: none;
@@ -958,6 +986,8 @@ header h1 {
   align-items: center;
   justify-content: center;
 }
+.sidebar-version { padding: 12px 16px; font-size: 11px; color: var(--text-muted); opacity: .7; user-select: text; }
+.footer-tab-badge[hidden] { display: none; }
 .footer-tab-panel { padding-top: 8px; }
 .footer-tab-panel[hidden] { display: none; }
 
@@ -1653,7 +1683,7 @@ header h1 {
    that already put them there on mobile only; now applied everywhere so
    the always-visible desktop row doesn't just keep growing. */
 #headerOverflowBtn { display: inline-flex; }
-#backupBtn, #restoreBtn, #styleGuideBtn, #dailyNoteBtn, #graphViewBtn, #publishSiteBtn { display: none; }
+#backupBtn, #restoreBtn, #styleGuideBtn, #dailyNoteBtn, #graphViewBtn, #treeViewBtn, #publishSiteBtn { display: none; }
 
 /* Header quick-create. Hidden by default: the sidebar's own "+ New Note"
    already covers a normal desktop layout, and on mobile the FAB does. It
@@ -1800,6 +1830,28 @@ kbd {
    could find that a term existed and on which line, but never read the
    document. Reuses .kb-backdrop/.kb-header/.kb-close; only the shell and
    the line-list body are specific. */
+.trash-modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); width: 640px; max-width: 95vw; max-height: 80vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
+.trash-body { padding: 4px 16px 12px; overflow-y: auto; }
+.trash-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.trash-item-main { flex: 1; min-width: 0; }
+.trash-item-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trash-item-meta { color: var(--text-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trash-empty { padding: 24px 0; text-align: center; color: var(--text-muted); font-size: 13px; }
+.history-section { padding: 4px 0; }
+.history-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.history-item-date { flex: 1; color: var(--text); }
+.history-empty { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+.history-hint { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-style: italic; }
+.version-diff-modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); width: 900px; max-width: 95vw; height: 82vh; display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
+.version-diff-body { padding: 8px 0 12px; overflow-y: auto; font-family: var(--mono, monospace); font-size: 12px; line-height: 1.5; }
+.diff-add { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.diff-del { background: color-mix(in srgb, var(--danger) 14%, transparent); opacity: .8; }
+.diff-sign { display: inline-block; width: 18px; text-align: center; user-select: none; color: var(--text-muted); }
+.diff-text { white-space: pre-wrap; word-break: break-word; }
+.tree-node { display: block; width: 100%; text-align: left; background: none; border: 0; color: var(--text); font: inherit; font-size: 13px; padding: 4px 0; cursor: pointer; }
+.tree-node:hover { color: var(--accent); }
+.tree-children { margin-left: 14px; padding-left: 10px; border-left: 1px solid var(--border); }
+.tree-hint { color: var(--text-muted); font-size: 11px; padding: 8px 0 0; line-height: 1.5; }
 .file-viewer-modal {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2050,6 +2102,7 @@ kbd {
   <button class="header-icon-btn" id="styleGuideBtn" title="Style guide — markdown syntax reference">📖</button>
   <button class="header-icon-btn" id="dailyNoteBtn" title="Today's note (Ctrl+Shift+D)">📅</button>
   <button class="header-icon-btn" id="graphViewBtn" title="Graph view — visualize links and relationships">🕸</button>
+  <button class="header-icon-btn" id="treeViewBtn" title="Note tree — notes nested by their parent: property">🌳</button>
   <button class="header-icon-btn" id="publishSiteBtn" title="Publish the whole vault as a linked static site">🌐</button>
   <button class="header-icon-btn" id="headerOverflowBtn" title="More">⋯</button>
   <input type="file" id="restoreInput" accept=".json" style="display:none">
@@ -2079,6 +2132,7 @@ kbd {
           <button id="cancelFolderBtn">✕</button>
         </div>
       </div>
+      <button class="add-folder-btn trash-open-btn" id="trashOpenBtn" type="button" style="display:none" title="Deleted notes are kept here for 30 days">🗑 Trash</button>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">Tags</div>
@@ -2093,6 +2147,7 @@ kbd {
       <div class="sidebar-label">Broken Links</div>
       <div class="tag-cloud" id="brokenLinksCloud"></div>
     </div>
+    <div class="sidebar-version" id="appVersionLabel"></div>
   </aside>
 
   <!-- Files Sidebar -->
@@ -2180,6 +2235,7 @@ kbd {
             <button class="footer-tab-btn active" data-tab="properties" type="button">Properties<span class="footer-tab-badge" id="tabBadgeProperties" hidden></span></button>
             <button class="footer-tab-btn" data-tab="links" type="button">Links<span class="footer-tab-badge" id="tabBadgeLinks" hidden></span></button>
             <button class="footer-tab-btn" data-tab="attachments" type="button">Attachments<span class="footer-tab-badge" id="tabBadgeAttachments" hidden></span></button>
+            <button class="footer-tab-btn" data-tab="history" type="button">History<span class="footer-tab-badge" id="tabBadgeHistory" hidden></span></button>
           </div>
           <div class="footer-tab-panel" id="footerTabPanelProperties">
             <div class="properties-section" id="propertiesSection" style="display:none">
@@ -2196,6 +2252,9 @@ kbd {
           </div>
           <div class="footer-tab-panel" id="footerTabPanelAttachments" hidden>
             <div class="attachment-section" id="attachmentSection"></div>
+          </div>
+          <div class="footer-tab-panel" id="footerTabPanelHistory" hidden>
+            <div class="history-section" id="historySection"></div>
           </div>
         </div>
         <div class="footer-actions">
@@ -2265,6 +2324,7 @@ kbd {
 <script src="vendor/minisearch.min.js"></script>
 <script src="vendor/vis-network.min.js"></script>
 <script src="vendor/fflate.min.js"></script>
+<script src="vendor/diff.min.js"></script>
 <!-- Pure logic extracted for unit-testing (tests/unit/pathUtils.test.js) —
      same global-scope semantics as every function below, just in its own
      file so Node can require() it directly. See js/lib/pathUtils.js. -->
@@ -2496,6 +2556,8 @@ let appMode         = 'notes';
 let currentNoteId   = null;
 let selectedFolderId = null;
 let selectedTags     = new Set(); // empty = no tag filter; AND semantics across members
+// Keep in step with ELM-desktop/src-tauri/tauri.conf.json and package.json.
+const APP_VERSION = '1.0.0';
 let editorView      = 'edit';
 let autoSaveTimer   = null;
 let previewTimer    = null;
@@ -2777,13 +2839,11 @@ const fsaVaultAdapter = {
   async delete(path) {
     // Move to /.trash/ instead of a hard delete, timestamp-suffixed so
     // repeated trashing of same-named files never collides.
-    const { name } = splitPath(path);
     // NOT ensureDir(): that sanitizes each segment, and sanitizePathSegment
     // strips leading dots — it would create a stray "trash" directory next to
     // the real ".trash" the rename below writes into.
     await this._getDirHandle(['.trash'], { create: true });
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    await this.rename(path, `.trash/${stamp}__${name}`);
+    await this.rename(path, `.trash/${buildTrashName(path)}`);
   },
 };
 
@@ -2895,10 +2955,8 @@ const tauriVaultAdapter = {
     await window.__TAURI__.fs.rename(tauriAbsPath(fromPath), tauriAbsPath(toPath));
   },
   async delete(path) {
-    const { name } = splitPath(path);
     await this.ensureDir('.trash');
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    await this.rename(path, `.trash/${stamp}__${name}`);
+    await this.rename(path, `.trash/${buildTrashName(path)}`);
   },
 };
 
@@ -3169,18 +3227,242 @@ async function purgeOldTrash() {
   let purged = 0;
   for (const entry of entries) {
     if (entry.kind !== 'file') continue;
-    // Trashed names are `<ISO timestamp, ':' and '.' swapped for '-'>__<original name>`
-    // — see vaultAdapter.delete(). Anything not matching that shape is left
-    // alone rather than guessed at (could be a file a user dropped in by hand).
-    const m = entry.name.match(/^(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z)__/);
-    if (!m) continue;
-    const iso = m[1].replace(/T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, 'T$1:$2:$3.$4Z');
-    const ts = Date.parse(iso);
-    if (Number.isNaN(ts) || ts >= cutoff) continue;
+    // Anything not matching the trash-name shape is left alone rather than
+    // guessed at (could be a file a user dropped in by hand).
+    const parsed = parseTrashName(entry.name);
+    if (!parsed || parsed.ts >= cutoff) continue;
     try { await vaultAdapter.remove(`.trash/${entry.name}`); purged++; }
     catch { /* leave it, retried next vault load */ }
   }
   if (purged) showToast(`Cleaned up ${purged} note(s) that had been in .trash for over ${TRASH_RETENTION_DAYS} days.`, 6000);
+}
+
+// ── Version history (Syncthing's .stversions) ──────────────────────────────
+// Syncthing's staggered/simple versioners move the old copy of a changed file
+// to .stversions/<same relative dir>/<name>~YYYYMMDD-HHMMSS.<ext>. ELM only
+// reads that; it never writes there. Files mode, .md notes only.
+async function listNoteVersions(entry) {
+  if (!entry || storageMode !== 'files') return { status: 'unsupported', versions: [] };
+  const { dirParts, name } = splitPath(entry.path);
+  const re = buildStversionRegex(name);
+  if (!re) return { status: 'not-applicable', versions: [] };
+  if (!await vaultAdapter.exists('.stversions')) return { status: 'no-stversions', versions: [] };
+  const dir = ['.stversions', ...dirParts].join('/');
+  let list; try { list = await vaultAdapter.list(dir); } catch { list = []; }
+  const versions = [];
+  for (const item of list) {
+    if (item.kind !== 'file') continue;
+    const m = item.name.match(re);
+    if (!m) continue;
+    const ts = parseStversionTag(m[1]);
+    if (ts != null) versions.push({ name: item.name, path: `${dir}/${item.name}`, ts });
+  }
+  versions.sort((a, b) => b.ts - a.ts);
+  return { status: versions.length ? 'ok' : 'empty', versions };
+}
+
+async function renderHistorySection() {
+  const section = document.getElementById('historySection');
+  if (!section) return;
+  section.dataset.count = '0';
+  if (!currentNoteId || storageMode !== 'files') { section.innerHTML = ''; return; }
+  const { status, versions } = await listNoteVersions(vaultIndex.get(currentNoteId));
+  const hint = '<p class="history-hint">If this note was renamed, older versions filed under a previous name won\'t appear here.</p>';
+  if (status === 'not-applicable') section.innerHTML = '<p class="history-empty">Version history is only available for note files.</p>';
+  else if (status === 'no-stversions') section.innerHTML = '<p class="history-empty">No <code>.stversions</code> folder found in your vault. Syncthing creates it once it has versioned a remote change — if you don\'t use Syncthing, there is nothing to show here.</p>';
+  else if (status === 'empty') section.innerHTML = '<p class="history-empty">Syncthing hasn\'t versioned this note yet.</p>' + hint;
+  else {
+    section.dataset.count = String(versions.length);
+    section.innerHTML = versions.map(v => `
+      <div class="history-item">
+        <span class="history-item-date">${escHtml(formatDateFull(v.ts))}</span>
+        <button class="export-btn history-diff-btn" data-path="${escHtml(v.path)}" type="button">Diff</button>
+        <button class="export-btn history-restore-btn" data-path="${escHtml(v.path)}" type="button">Restore</button>
+      </div>`).join('') + hint;
+  }
+  updateFooterTabBadges();
+}
+
+function renderUnifiedDiff(oldText, newText) {
+  const parts = Diff.diffLines(oldText, newText);
+  if (!parts.some(p => p.added || p.removed)) return '<div class="history-empty" style="padding:16px">This version is identical to the current text.</div>';
+  return parts.map(p => {
+    const cls = p.added ? 'diff-add' : p.removed ? 'diff-del' : 'diff-ctx';
+    const sign = p.added ? '+' : p.removed ? '-' : ' ';
+    return p.value.replace(/\n$/, '').split('\n')
+      .map(line => `<div class="${cls}"><span class="diff-sign">${sign}</span><span class="diff-text">${escHtml(line)}</span></div>`).join('');
+  }).join('');
+}
+
+async function openVersionDiff(path) {
+  const oldText = await vaultAdapter.readText(path);
+  if (oldText == null) { showToast('Could not read that version — it may have been cleaned up.'); return; }
+  const newText = document.getElementById('editorTextarea').value;
+  const oldBody = splitFrontmatter(oldText).body;
+  document.getElementById('versionDiffTitle').textContent = `Diff — ${splitPath(path).name} → current`;
+  document.getElementById('versionDiffBody').innerHTML = renderUnifiedDiff(oldBody, newText);
+  document.getElementById('versionDiffBackdrop').style.display = 'flex';
+}
+
+function closeVersionDiffModal() {
+  const b = document.getElementById('versionDiffBackdrop');
+  if (!b) return;
+  b.style.display = 'none';
+  document.getElementById('versionDiffBody').innerHTML = '';
+}
+
+// Loads the old text into the editor and lets the normal autosave write it —
+// no second save path, so the usual mtime/conflict checks still apply.
+async function restoreVersion(path) {
+  const text = await vaultAdapter.readText(path);
+  if (text == null) { showToast('Could not read that version.'); return; }
+  if (!await confirmDialog('Load this version into the editor? Unsaved edits in the editor will be replaced. It is saved on the next autosave.')) return;
+  const body = splitFrontmatter(text).body;
+  document.getElementById('editorTextarea').value = body;
+  updateWordCount(body);
+  if (editorView !== 'edit') await renderPreview();
+  scheduleAutoSave();
+  closeVersionDiffModal();
+  showToast('Version loaded into the editor.');
+}
+
+// ── Note tree ───────────────────────────────────────────────────────────────
+// Nests notes by a `parent: "[[Other note]]"` property — the same typed
+// relationship the graph already draws, so nothing new to learn or store.
+// Returns { roots, children } as id lists; only notes that take part in a
+// hierarchy (have a parent or a child) are included.
+function buildNoteTree() {
+  const parentOf = new Map();
+  const children = new Map();
+  for (const entry of vaultIndex.values()) {
+    const targets = entry.meta ? extractWikilinkTargetsFromValue(entry.meta.parent) : [];
+    const pid = targets.length ? resolveWikilinkTarget(targets[0]) : null;
+    if (!pid || pid === entry.id || !vaultIndex.has(pid)) continue;
+    parentOf.set(entry.id, pid);
+    if (!children.has(pid)) children.set(pid, []);
+    children.get(pid).push(entry.id);
+  }
+  const byTitle = (a, b) => (vaultIndex.get(a).title || '').localeCompare(vaultIndex.get(b).title || '');
+  for (const list of children.values()) list.sort(byTitle);
+  // A cycle (A is B's parent and B is A's) has no root, so it would vanish;
+  // surface one member of each such loop as a root instead.
+  const roots = [...children.keys()].filter(id => !parentOf.has(id));
+  const reached = new Set();
+  const walk = id => { if (reached.has(id)) return; reached.add(id); (children.get(id) || []).forEach(walk); };
+  roots.forEach(walk);
+  for (const id of children.keys()) if (!reached.has(id)) { roots.push(id); walk(id); }
+  roots.sort(byTitle);
+  return { roots, children };
+}
+
+function renderNoteTree() {
+  const body = document.getElementById('treeBody');
+  const { roots, children } = buildNoteTree();
+  const hint = '<div class="tree-hint">Add <code>parent: "[[Note title]]"</code> to a note\'s properties to nest it under another note.</div>';
+  if (!roots.length) { body.innerHTML = '<div class="trash-empty">No notes have a parent yet.</div>' + hint; return; }
+  const seen = new Set();
+  const node = id => {
+    const e = vaultIndex.get(id);
+    const kids = seen.has(id) ? [] : (children.get(id) || []);
+    seen.add(id);
+    return '<button class="tree-node" type="button" data-id="' + escHtml(id) + '">' + escHtml(e.title || 'Untitled') + '</button>'
+      + (kids.length ? '<div class="tree-children">' + kids.map(node).join('') + '</div>' : '');
+  };
+  body.innerHTML = roots.map(node).join('') + hint;
+}
+
+function openNoteTree() {
+  if (storageMode !== 'files') { showToast('Note tree needs a vault folder (properties live in the files).'); return; }
+  renderNoteTree();
+  document.getElementById('treeBackdrop').style.display = 'flex';
+}
+function closeNoteTree() {
+  const b = document.getElementById('treeBackdrop');
+  if (b) b.style.display = 'none';
+}
+
+// ── Trash view ──────────────────────────────────────────────────────────────
+// Files mode only: .trash/ is a real directory in the vault. Each entry's name
+// encodes where it came from (see buildTrashName), so Restore can put it back.
+async function listTrash() {
+  if (storageMode !== 'files') return [];
+  let entries;
+  try { entries = await vaultAdapter.list('.trash'); } catch { return []; }
+  const items = [];
+  for (const e of entries) {
+    if (e.kind !== 'file') continue;
+    const parsed = parseTrashName(e.name);
+    if (!parsed) continue;
+    items.push({ file: e.name, ts: parsed.ts, origin: parsed.path, leaf: splitPath(parsed.path).name });
+  }
+  return items.sort((a, b) => b.ts - a.ts);
+}
+
+async function renderTrash() {
+  const body = document.getElementById('trashBody');
+  const items = await listTrash();
+  document.getElementById('trashEmptyBtn').style.display = items.length ? '' : 'none';
+  if (!items.length) { body.innerHTML = '<div class="trash-empty">Trash is empty.</div>'; return; }
+  const DAY = 24 * 60 * 60 * 1000;
+  body.innerHTML = items.map(it => {
+    const left = Math.max(0, Math.ceil((it.ts + TRASH_RETENTION_DAYS * DAY - Date.now()) / DAY));
+    return `<div class="trash-item" data-file="${escHtml(it.file)}">
+      <div class="trash-item-main">
+        <div class="trash-item-name">${escHtml(it.leaf)}</div>
+        <div class="trash-item-meta">${escHtml(it.origin)} · deleted ${escHtml(formatDateFull(it.ts))} · ${left}d left</div>
+      </div>
+      <button class="export-btn trash-restore-btn" type="button">Restore</button>
+      <button class="export-btn trash-delete-btn" type="button">Delete forever</button>
+    </div>`;
+  }).join('');
+}
+
+async function openTrash() {
+  if (storageMode !== 'files') return;
+  document.getElementById('trashBackdrop').style.display = 'flex';
+  await renderTrash();
+}
+function closeTrash() {
+  const b = document.getElementById('trashBackdrop');
+  if (b) b.style.display = 'none';
+}
+
+async function restoreTrashItem(file) {
+  if (!requireWritableVault()) return;
+  const parsed = parseTrashName(file);
+  if (!parsed) return;
+  const { dirParts, name } = splitPath(parsed.path);
+  const dir = dirParts.join('/');
+  const dot = name.lastIndexOf('.');
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot + 1) : '';
+  // Never overwrite: if the name is taken again, restore beside it as "-2".
+  let target = name;
+  if (await vaultAdapter.exists(dir ? `${dir}/${name}` : name)) {
+    target = ext ? await resolveUniqueFilename(dir, base, ext) : `${base}-restored`;
+  }
+  const path = dir ? `${dir}/${target}` : target;
+  noteVaultMutation(`.trash/${file}`);
+  noteVaultMutation(path);
+  await vaultAdapter.rename(`.trash/${file}`, path);
+  if (/\.md$/i.test(path)) await indexNoteFile(path, dir || null);
+  await refreshAll();
+  await renderTrash();
+  showToast(`Restored to ${path}`);
+}
+
+async function deleteTrashItemForever(file) {
+  if (!await confirmDialog('Delete this permanently? This cannot be undone.')) return;
+  await vaultAdapter.remove(`.trash/${file}`);
+  await renderTrash();
+}
+
+async function emptyTrash() {
+  const items = await listTrash();
+  if (!items.length) return;
+  if (!await confirmDialog(`Permanently delete ${items.length} item(s) in the trash? This cannot be undone.`)) return;
+  for (const it of items) { try { await vaultAdapter.remove(`.trash/${it.file}`); } catch {} }
+  await renderTrash();
 }
 
 // Throttled progress reporting. Re-rendering on every batch thrashes layout
@@ -3805,9 +4087,22 @@ async function getAllNotes() {
   return notes.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+// Is a note in `folderId` or anywhere beneath it? Files-mode folder ids ARE
+// directory paths ("Lore/Book 1"), so descendants are exactly the ids with
+// that path as a prefix. Safe to call in IndexedDB mode too: those ids are
+// UUIDs, which are never followed by a "/", so it degrades to an exact match.
+function inFolderTree(noteFolderId, folderId) {
+  if (!noteFolderId || !folderId) return false;
+  return noteFolderId === folderId || noteFolderId.startsWith(folderId + '/');
+}
+
+// Files mode includes sub-folders' notes: selecting "Lore" shows everything
+// under Lore, like a file explorer's tree. (The only other caller is the
+// IndexedDB-mode folder delete below, which has flat folders and is
+// unaffected.)
 async function getNotesByFolder(folderId) {
   if (storageMode === 'files') {
-    return [...vaultIndex.values()].filter(n => n.folderId === folderId).sort((a, b) => b.updatedAt - a.updatedAt);
+    return [...vaultIndex.values()].filter(n => inFolderTree(n.folderId, folderId)).sort((a, b) => b.updatedAt - a.updatedAt);
   }
   const notes = await dbGetByIndex('notes', 'by_folder', folderId);
   return notes.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -3920,7 +4215,11 @@ async function commitNoteRenameInner() {
 }
 
 // ── Folders CRUD ───────────────────────────────────────────────────────────
-async function createFolder(name, color) {
+// `parentId` (files mode only) nests the new folder inside an existing one —
+// folder ids are directory paths, so the child is simply `<parent>/<name>`.
+// IndexedDB-mode folders are flat UUID records with no path semantics, so a
+// parent is ignored there.
+async function createFolder(name, color, parentId = null) {
   if (!requireWritableVault()) return null;
   if (storageMode === 'files') {
     // Filesystem-safe only — NOT slugified. Unlike note titles (which
@@ -3928,11 +4227,23 @@ async function createFolder(name, color) {
     // folder names should preserve the user's casing/spacing, matching both
     // pre-Phase-1b behavior and normal Obsidian folder naming ("Lore",
     // "Book 1").
-    const dir = sanitizePathSegment(name.trim()) || 'folder';
+    const leaf = sanitizePathSegment(name.trim()) || 'folder';
+    const existing = await getAllFolders();
+    if (parentId) {
+      if (!existing.some(f => f.id === parentId)) { showToast('That parent folder no longer exists.'); return null; }
+      // At most MAX_VAULT_DEPTH path segments. The vault scanner
+      // (collectVaultFiles) stops descending there, so a deeper folder would
+      // be listed in the sidebar while its notes silently never got indexed.
+      if (parentId.split('/').length + 1 > MAX_VAULT_DEPTH) {
+        showToast(`Folders can nest ${MAX_VAULT_DEPTH} levels deep at most.`, 4000);
+        return null;
+      }
+    }
+    const dir = parentId ? `${parentId}/${leaf}` : leaf;
     // Windows and macOS are case-insensitive by default: creating "lore" when
     // "Lore" exists silently reuses the same real directory, leaving two
     // folder ids pointing at one set of files. Adopt the existing one instead.
-    const clash = (await getAllFolders()).find(f => f.id.toLowerCase() === dir.toLowerCase());
+    const clash = existing.find(f => f.id.toLowerCase() === dir.toLowerCase());
     if (clash) {
       if (clash.id !== dir) showToast(`Folder “${clash.name}” already exists — using it (folder names are case-insensitive on disk).`, 4000);
       return clash.id;
@@ -6112,6 +6423,7 @@ async function openNote(id) {
   await renderBacklinksSection();
   await renderRelationshipsSection();
   await renderUnlinkedMentionsSection();
+  await renderHistorySection();
   selectDefaultFooterTab();
   renderOutline();
   // Recent Notes excludes the currently-open note — that changes on every
@@ -6124,11 +6436,14 @@ async function populateFolderSelect(currentFolderId) {
   const sel     = document.getElementById('folderSelect');
   const folders = await getAllFolders();
   sel.innerHTML = '<option value="">— none —</option>' +
-    // Full path as the label: two nested folders can share a leaf name
-    // ("Lore/Notes" and "Drafts/Notes"), and a bare "Notes" twice in the
-    // dropdown is unusable.
+    // Full path as the label in files mode: two nested folders can share a
+    // leaf name ("Lore/Notes" and "Drafts/Notes"), and a bare "Notes" twice
+    // in the dropdown is unusable. In IndexedDB mode the id is a random UUID
+    // — it used to be shown as-is, so the web build's dropdown listed
+    // gibberish — so use the folder's name there (those folders are flat, so
+    // there is no path to disambiguate with).
     folders.map(f =>
-      `<option value="${escHtml(f.id)}"${f.id === currentFolderId ? ' selected' : ''}>${escHtml(f.id)}</option>`
+      `<option value="${escHtml(f.id)}"${f.id === currentFolderId ? ' selected' : ''}>${escHtml(storageMode === 'files' ? f.id : f.name)}</option>`
     ).join('');
 }
 
@@ -7332,7 +7647,7 @@ function renderPropertiesSection() {
 // deeper (inside a tab panel) than before.
 function setFooterTab(tab) {
   document.querySelectorAll('.footer-tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-  const panels = { properties: 'footerTabPanelProperties', links: 'footerTabPanelLinks', attachments: 'footerTabPanelAttachments' };
+  const panels = { properties: 'footerTabPanelProperties', links: 'footerTabPanelLinks', attachments: 'footerTabPanelAttachments', history: 'footerTabPanelHistory' };
   for (const key in panels) {
     const el = document.getElementById(panels[key]);
     if (el) el.hidden = key !== tab;
@@ -7357,6 +7672,7 @@ function updateFooterTabBadges() {
   const attachHasContent   = hasContent('attachmentSection');
   setTabBadge('tabBadgeLinks', linksHasContent);
   setTabBadge('tabBadgeAttachments', attachHasContent);
+  setTabBadge('tabBadgeHistory', Number(document.getElementById('historySection')?.dataset.count || 0) > 0);
   return { linksHasContent, attachHasContent };
 }
 
@@ -7866,6 +8182,8 @@ async function renderFolderList() {
   const allNotes = await getAllNotes();
   const el = document.getElementById('folderList');
   if (!el) return;
+  const trashBtn = document.getElementById('trashOpenBtn');
+  if (trashBtn) trashBtn.style.display = storageMode === 'files' ? '' : 'none';
 
   const allActive = selectedFolderId === null && selectedTags.size === 0;
   let html = `<div class="folder-item${allActive ? ' active' : ''}" data-folder-id="">
@@ -7874,21 +8192,62 @@ async function renderFolderList() {
     <span class="folder-count">${allNotes.length}</span>
   </div>`;
 
+  // Tree behaviour (collapse caret, "+ subfolder") only exists in files mode,
+  // where a folder id is a real directory path. IndexedDB folders are flat.
+  const nested = storageMode === 'files';
+  const hasKids = new Set();   // ids with at least one sub-folder
+  if (nested) for (const f of folders) { const cut = f.id.lastIndexOf('/'); if (cut > 0) hasKids.add(f.id.slice(0, cut)); }
+
   for (const f of folders) {
-    const cnt    = allNotes.filter(n => n.folderId === f.id).length;
+    if (nested) {
+      // Hidden when any ancestor is collapsed.
+      const parts = f.id.split('/');
+      let hidden = false;
+      for (let i = 1; i < parts.length; i++) if (collapsedFolders.has(parts.slice(0, i).join('/'))) { hidden = true; break; }
+      if (hidden) continue;
+    }
+    // Counts include sub-folders' notes (matches what clicking the folder
+    // shows — see getNotesByFolder), so a collapsed parent still tells you
+    // how much is inside it.
+    const cnt    = allNotes.filter(n => inFolderTree(n.folderId, f.id)).length;
     const active = selectedFolderId === f.id && selectedTags.size === 0;
     // Nested vault folders are indented by depth; folders sort by full path so
     // a parent always renders directly above its children (see getAllFolders).
     const indent = (f.depth || 0) * 14;
+    const collapsed = nested && collapsedFolders.has(f.id);
+    // Rows without children get a same-width spacer so icons stay aligned.
+    const toggle = !nested ? ''
+      : hasKids.has(f.id)
+        ? `<button class="folder-toggle${collapsed ? ' collapsed' : ''}" data-folder-id="${escHtml(f.id)}" aria-expanded="${!collapsed}" title="${collapsed ? 'Expand' : 'Collapse'}"></button>`
+        : `<span class="folder-toggle-spacer"></span>`;
+    const addSub = nested && f.id.split('/').length < MAX_VAULT_DEPTH
+      ? `<button class="folder-add-sub" data-folder-id="${escHtml(f.id)}" title="New subfolder in ${escHtml(f.name)}">+</button>`
+      : '';
     html += `<div class="folder-item${active ? ' active' : ''}" data-folder-id="${escHtml(f.id)}"${indent ? ` style="padding-left:${indent + 10}px"` : ''} title="${escHtml(f.id)}">
-      <span class="folder-icon" style="color:${escHtml(f.color)}">📁</span>
+      ${toggle}<span class="folder-icon" style="color:${escHtml(f.color)}">📁</span>
       <span class="folder-name">${escHtml(f.name)}</span>
       <span class="folder-count">${cnt}</span>
-      <button class="folder-publish" data-folder-id="${escHtml(f.id)}" title="Publish this folder as a site">🌐</button>
+      ${addSub}<button class="folder-publish" data-folder-id="${escHtml(f.id)}" title="Publish this folder as a site">🌐</button>
       <button class="folder-delete" data-folder-id="${escHtml(f.id)}" title="Delete folder">✕</button>
     </div>`;
   }
   el.innerHTML = html;
+}
+
+// Which sidebar folders are collapsed — remembered across sessions. try/catch
+// because storage can throw (private windows, blocked site data).
+let collapsedFolders = new Set();
+try { collapsedFolders = new Set(JSON.parse(localStorage.getItem('elm-collapsed-folders') || '[]')); } catch {}
+function saveCollapsedFolders() {
+  try { localStorage.setItem('elm-collapsed-folders', JSON.stringify([...collapsedFolders])); } catch {}
+}
+// Make a folder visible by expanding every ancestor (e.g. after creating a
+// subfolder inside a collapsed parent, or selecting a nested one).
+function expandFolderAncestors(id) {
+  const parts = String(id || '').split('/');
+  let changed = false;
+  for (let i = 1; i < parts.length; i++) if (collapsedFolders.delete(parts.slice(0, i).join('/'))) changed = true;
+  if (changed) saveCollapsedFolders();
 }
 
 // The search box (#tagSearchInput) only narrows which chips are SHOWN
@@ -7966,6 +8325,7 @@ async function renderSyncConflictsSection() {
 
 async function selectFolder(folderId) {
   selectedFolderId = folderId || null;
+  expandFolderAncestors(selectedFolderId);   // never leave the selection hidden inside a collapsed parent
   selectedTags.clear();
   await refreshNotesList();
   await renderSidebarNotes();
@@ -7994,7 +8354,7 @@ async function refreshNotesList() {
 
   if (query) {
     notes = await searchNotes(query, pat);
-    if (selectedFolderId) notes = notes.filter(n => n.folderId === selectedFolderId);
+    if (selectedFolderId) notes = notes.filter(n => inFolderTree(n.folderId, selectedFolderId));
     if (selectedTags.size) notes = notes.filter(n => [...selectedTags].every(t => n.tags.includes(t)));
   } else if (selectedTags.size) {
     notes = await getNotesByTags([...selectedTags]);
@@ -8068,7 +8428,7 @@ function renderNoteItem(note, folders, query, pat) {
   }
 
   const folderHtml = folder
-    ? `<span class="ni-folder" style="background:${folder.color}22;color:${folder.color}">${escHtml(folder.name)}</span>`
+    ? `<span class="ni-folder" style="background:${folder.color}22;color:${folder.color}"${storageMode === 'files' ? ` title="${escHtml(folder.id)}"` : ''}>${escHtml(folder.name)}</span>`
     : '';
   const tagsHtml = note.tags.slice(0, 3).map(t => `<span class="ni-tag">#${escHtml(t)}</span>`).join('');
   const pinned   = !!note.pinned;
@@ -8748,6 +9108,7 @@ function initEvents() {
     { target: 'styleGuideBtn', label: '📖 Style guide' },
     { target: 'dailyNoteBtn',  label: '📅 Today\'s note' },
     { target: 'graphViewBtn',  label: '🕸 Graph view' },
+    { target: 'treeViewBtn',  label: '🌳 Note tree' },
     { target: 'publishSiteBtn', label: '🌐 Publish site' },
     // Visible as their own header buttons on wide screens (so the filter
     // below drops them there); moved in here at ≤780px to stop the header
@@ -8969,6 +9330,21 @@ function initEvents() {
 
   // Folder list (delegation)
   document.getElementById('folderList').addEventListener('click', async e => {
+    const toggleBtn = e.target.closest('.folder-toggle');
+    if (toggleBtn) {
+      e.stopPropagation();   // expanding/collapsing must not also select the folder
+      const fid = toggleBtn.dataset.folderId;
+      if (collapsedFolders.has(fid)) collapsedFolders.delete(fid); else collapsedFolders.add(fid);
+      saveCollapsedFolders();
+      await renderFolderList();
+      return;
+    }
+    const subBtn = e.target.closest('.folder-add-sub');
+    if (subBtn) {
+      e.stopPropagation();
+      startNewFolder(subBtn.dataset.folderId);
+      return;
+    }
     const pubBtn = e.target.closest('.folder-publish');
     if (pubBtn) {
       e.stopPropagation();
@@ -9122,25 +9498,37 @@ function initEvents() {
   });
 
   // New folder
-  document.getElementById('addFolderBtn').addEventListener('click', () => {
+  // One input serves both "+ New Folder" (top level) and a folder row's "+"
+  // (a subfolder inside it); newFolderParentId remembers which.
+  let newFolderParentId = null;
+  function startNewFolder(parentId = null) {
+    newFolderParentId = parentId;
+    const input = document.getElementById('newFolderInput');
+    input.placeholder = parentId ? `New folder inside “${parentId.split('/').pop()}”…` : 'Folder name…';
     document.getElementById('newFolderInputWrap').style.display = 'flex';
     document.getElementById('addFolderBtn').style.display = 'none';
-    document.getElementById('newFolderInput').focus();
-  });
-  document.getElementById('cancelFolderBtn').addEventListener('click', () => {
+    input.focus();
+    // The input sits at the bottom of the folder list — bring it into view
+    // when "+" was clicked on a row far above it.
+    document.getElementById('newFolderInputWrap').scrollIntoView({ block: 'nearest' });
+  }
+  function endNewFolder() {
+    newFolderParentId = null;
+    const input = document.getElementById('newFolderInput');
+    input.value = ''; input.placeholder = 'Folder name…';
     document.getElementById('newFolderInputWrap').style.display = 'none';
     document.getElementById('addFolderBtn').style.display = '';
-    document.getElementById('newFolderInput').value = '';
-  });
+  }
+  document.getElementById('addFolderBtn').addEventListener('click', () => startNewFolder(null));
+  document.getElementById('cancelFolderBtn').addEventListener('click', endNewFolder);
   const saveFolderAction = async () => {
     const name = document.getElementById('newFolderInput').value.trim();
     if (!name) return;
     const color = FOLDER_COLORS[Math.floor(Math.random() * FOLDER_COLORS.length)];
-    const fid = await createFolder(name, color);
-    if (!fid) return; // vault locked — keep the typed name in the input so it isn't lost
-    document.getElementById('newFolderInputWrap').style.display = 'none';
-    document.getElementById('addFolderBtn').style.display = '';
-    document.getElementById('newFolderInput').value = '';
+    const fid = await createFolder(name, color, newFolderParentId);
+    if (!fid) return; // vault locked / parent gone / too deep — keep the typed name so it isn't lost
+    expandFolderAncestors(fid);   // a subfolder created inside a collapsed parent must be visible
+    endNewFolder();
     await renderSidebarNotes();
     if (currentNoteId) await populateFolderSelect((await getNoteById(currentNoteId))?.folderId || null);
     else await populateFolderSelect(null);
@@ -9208,7 +9596,7 @@ function initEvents() {
   });
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeLightbox(); closeKb(); closeStyleGuide(); closePalette(); closeFileViewer(); closeWikilinkAutocomplete(); closeGraphView(); }
+    if (e.key === 'Escape') { closeLightbox(); closeKb(); closeStyleGuide(); closePalette(); closeFileViewer(); closeWikilinkAutocomplete(); closeGraphView(); closeTrash(); closeNoteTree(); closeVersionDiffModal(); }
     if (e.key === '?' && !e.ctrlKey && !e.metaKey && !['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) {
       e.preventDefault(); openKb();
     }
@@ -9360,6 +9748,49 @@ function initEvents() {
     if (files.get(id)?.lines) openFileViewer(id);
   });
 
+  // Version label (sidebar foot + logo tooltip)
+  document.getElementById('appVersionLabel').textContent = 'ELM v' + APP_VERSION;
+  document.querySelector('header .logo').title = 'ELM v' + APP_VERSION;
+
+  // Version history
+  document.getElementById('historySection').addEventListener('click', e => {
+    const d = e.target.closest('.history-diff-btn');
+    if (d) { openVersionDiff(d.dataset.path); return; }
+    const r = e.target.closest('.history-restore-btn');
+    if (r) restoreVersion(r.dataset.path);
+  });
+  document.getElementById('versionDiffClose').addEventListener('click', closeVersionDiffModal);
+  document.getElementById('versionDiffBackdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('versionDiffBackdrop')) closeVersionDiffModal();
+  });
+
+  // Note tree modal
+  document.getElementById('treeViewBtn').addEventListener('click', openNoteTree);
+  document.getElementById('treeClose').addEventListener('click', closeNoteTree);
+  document.getElementById('treeBackdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('treeBackdrop')) closeNoteTree();
+  });
+  document.getElementById('treeBody').addEventListener('click', e => {
+    const n = e.target.closest('.tree-node');
+    if (!n) return;
+    closeNoteTree();
+    openNote(n.dataset.id);
+  });
+
+  // Trash modal
+  document.getElementById('trashOpenBtn').addEventListener('click', openTrash);
+  document.getElementById('trashClose').addEventListener('click', closeTrash);
+  document.getElementById('trashEmptyBtn').addEventListener('click', emptyTrash);
+  document.getElementById('trashBackdrop').addEventListener('click', e => {
+    if (e.target === document.getElementById('trashBackdrop')) closeTrash();
+  });
+  document.getElementById('trashBody').addEventListener('click', e => {
+    const item = e.target.closest('.trash-item');
+    if (!item) return;
+    if (e.target.closest('.trash-restore-btn')) restoreTrashItem(item.dataset.file);
+    else if (e.target.closest('.trash-delete-btn')) deleteTrashItemForever(item.dataset.file);
+  });
+
   // File viewer modal
   document.getElementById('fileViewerClose').addEventListener('click', closeFileViewer);
   document.getElementById('fileViewerBackdrop').addEventListener('click', e => {
@@ -9501,6 +9932,34 @@ function initEvents() {
       <button class="kb-close" id="fileViewerClose">✕</button>
     </div>
     <div class="file-viewer-body" id="fileViewerBody"></div>
+  </div>
+</div>
+
+<div class="kb-backdrop" id="versionDiffBackdrop" style="display:none">
+  <div class="version-diff-modal" role="dialog" aria-modal="true" aria-label="Version diff">
+    <div class="kb-header"><span id="versionDiffTitle"></span><button class="kb-close" id="versionDiffClose">✕</button></div>
+    <div class="version-diff-body" id="versionDiffBody"></div>
+  </div>
+</div>
+
+<div class="kb-backdrop" id="treeBackdrop" style="display:none">
+  <div class="trash-modal" role="dialog" aria-modal="true" aria-label="Note tree">
+    <div class="kb-header">
+      <span>Note tree</span>
+      <button class="kb-close" id="treeClose" style="margin-left:auto">✕</button>
+    </div>
+    <div class="trash-body" id="treeBody"></div>
+  </div>
+</div>
+
+<div class="kb-backdrop" id="trashBackdrop" style="display:none">
+  <div class="trash-modal" role="dialog" aria-modal="true" aria-label="Trash">
+    <div class="kb-header">
+      <span>Trash</span>
+      <button class="export-btn" id="trashEmptyBtn" type="button" style="margin-left:auto">Empty trash</button>
+      <button class="kb-close" id="trashClose">✕</button>
+    </div>
+    <div class="trash-body" id="trashBody"></div>
   </div>
 </div>
 

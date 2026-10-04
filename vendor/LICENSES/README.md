@@ -23,6 +23,7 @@ Nothing here applies to ELM's own code — that is MIT, see `../../LICENSE`.
 | idb | IndexedDB wrapper | ISC | `idb-ISC.txt` | github.com/jakearchibald/idb |
 | vis-network | Graph view | MIT **or** Apache-2.0 | `vis-network-MIT.txt`, `vis-network-Apache-2.0.txt` | github.com/visjs/vis-network |
 | fflate | Zip for site export | MIT | `fflate-MIT.txt` | github.com/101arrowz/fflate |
+| jsdiff | Note version-history diff | BSD-3-Clause | `jsdiff-BSD-3-Clause.txt` | github.com/kpdecker/jsdiff |
 | pdf.js | PDF reading | Apache-2.0 | `pdf.js-Apache-2.0.txt` | github.com/mozilla/pdf.js |
 | mammoth | DOCX reading | BSD-2-Clause | `mammoth-BSD-2-Clause.txt` | github.com/mwilliamson/mammoth.js |
 | SheetJS (xlsx) | Spreadsheet reading | Apache-2.0 | `sheetjs-Apache-2.0.txt` | github.com/SheetJS/sheetjs |
